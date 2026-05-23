@@ -9,6 +9,7 @@ import {
   getLayoutsByCategory,
 } from '@/lib/templates/blocks';
 import { findLayerById, insertLayer, canHaveChildren } from '@/lib/mcp/utils';
+import { broadcastLayersChanged } from '@/lib/mcp/broadcast';
 
 interface CatalogEntry {
   key: string;
@@ -104,6 +105,7 @@ Use list_layouts to see available layouts.`,
       }
 
       await upsertDraftLayers(page_id, layers);
+      broadcastLayersChanged(page_id, layers).catch(() => {});
 
       return {
         content: [{
