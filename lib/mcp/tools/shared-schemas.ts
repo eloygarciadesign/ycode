@@ -17,10 +17,22 @@ export const templateEnum = z.enum(
  * batch set_rich_text operation. Mirrors the RichTextBlock type in utils.ts.
  */
 export const richTextBlockSchema = z.object({
-  type: z.enum(['paragraph', 'heading', 'blockquote', 'bulletList', 'orderedList', 'codeBlock', 'horizontalRule']),
+  type: z.enum([
+    'paragraph', 'heading', 'blockquote',
+    'bulletList', 'orderedList',
+    'codeBlock', 'horizontalRule',
+    'htmlEmbed', 'image', 'table', 'component',
+  ]),
   text: z.string().optional().describe('Text content. Supports **bold**, *italic*, [link](url).'),
   level: z.number().optional().describe('Heading level 1-6 (for heading type)'),
   items: z.array(z.string()).optional().describe('List items (for bulletList/orderedList)'),
+  code: z.string().optional().describe('For htmlEmbed: the HTML/JS code to embed'),
+  src: z.string().optional().describe('For image: external image URL (use asset_id for uploaded assets)'),
+  alt: z.string().optional().describe('For image: alt text'),
+  asset_id: z.string().optional().describe('For image: asset ID from upload_asset'),
+  rows: z.array(z.array(z.string())).optional().describe('For table: 2D array of cell text. Inline marks (**bold** etc.) work in each cell.'),
+  header_row: z.boolean().optional().describe('For table: whether the first row should render as table headers. Defaults true.'),
+  component_id: z.string().optional().describe('For component: ID of the component to embed'),
 });
 
 export const designSchema = z.object({
