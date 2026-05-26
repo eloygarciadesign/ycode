@@ -15,7 +15,8 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { CollectionPaginationMeta, Layer } from '@/types';
+import { ITEMS_INJECTED_EVENT, type ItemsInjectedDetail } from '@/components/FilterableCollection';
+import type { CollectionPaginationMeta, CollectionItem, Layer } from '@/types';
 
 interface LoadMoreCollectionProps {
   children: React.ReactNode;
@@ -25,6 +26,14 @@ interface LoadMoreCollectionProps {
   layerTemplate?: Layer[];
   /** Optional: item IDs for multi-reference filtering */
   itemIds?: string[];
+  /** Preview mode forces server-rendered links to use the `/ycode/preview` prefix. */
+  isPreview?: boolean;
+  /** Item ID of the dynamic-page collection being rendered (for `current-page` link keywords). */
+  pageCollectionItemId?: string;
+  /** Ordered ids of the dynamic page's collection — powers `next-item` / `previous-item` link keywords. */
+  pageCollectionSortedItemIds?: string[];
+  /** Full collection layer (sans children) — lets the server rebuild proper item wrappers (link/action/attributes). */
+  collectionLayer?: Omit<Layer, 'children'>;
 }
 
 interface LoadMoreState {
@@ -39,6 +48,10 @@ export default function LoadMoreCollection({
   collectionLayerId,
   layerTemplate,
   itemIds,
+  isPreview = false,
+  pageCollectionItemId,
+  pageCollectionSortedItemIds,
+  collectionLayer,
 }: LoadMoreCollectionProps) {
   const { totalItems, itemsPerPage, collectionId } = paginationMeta;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,6 +91,10 @@ export default function LoadMoreCollection({
             itemIds: itemIds,
             layerTemplate: layerTemplate,
             collectionLayerId: collectionLayerId,
+            isPreview,
+            pageCollectionItemId,
+            pageCollectionSortedItemIds,
+            collectionLayer,
           }),
         }
       );
@@ -88,10 +105,23 @@ export default function LoadMoreCollection({
       
       const result = await response.json();
       const { items, html, hasMore } = result.data;
-      
+      const newItemIds: string[] = Array.isArray(items)
+        ? (items as CollectionItem[]).map(item => item.id)
+        : [];
+
       // Append rendered HTML to the items container
       if (html && itemsContainerRef.current) {
         itemsContainerRef.current.insertAdjacentHTML('beforeend', html);
+        if (layerTemplate && newItemIds.length > 0) {
+          const detail: ItemsInjectedDetail = {
+            collectionLayerId,
+            layerTemplate,
+            itemIds: newItemIds,
+            append: true,
+            collectionLayer,
+          };
+          window.dispatchEvent(new CustomEvent<ItemsInjectedDetail>(ITEMS_INJECTED_EVENT, { detail }));
+        }
       }
       
       setState(prev => ({
@@ -103,7 +133,7 @@ export default function LoadMoreCollection({
       console.error('Load more failed:', error);
       setState(prev => ({ ...prev, isLoading: false }));
     }
-  }, [state.loadedCount, state.isLoading, state.hasMore, itemsPerPage, collectionId, collectionLayerId, itemIds, layerTemplate]);
+  }, [state.loadedCount, state.isLoading, state.hasMore, itemsPerPage, collectionId, collectionLayerId, itemIds, layerTemplate, isPreview, pageCollectionItemId, pageCollectionSortedItemIds, collectionLayer]);
 
   // Handle click events on load more button (delegated)
   useEffect(() => {

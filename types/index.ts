@@ -460,6 +460,11 @@ export interface Layer {
     collectionLayerClasses?: string[];
     collectionLayerTag?: string;
     isPublished?: boolean;
+    // Full collection layer (sans children) used by the client to rebuild
+    // proper item wrappers (anchor/link/attribute) when injecting filtered
+    // or load-more items. Without this, the wrapper would be a plain <div>
+    // and lose link/action behavior.
+    collectionLayer?: Omit<Layer, 'children'>;
   };
 }
 
@@ -1307,6 +1312,10 @@ export interface CollectionPaginationMeta {
   mode?: 'pages' | 'load_more'; // Pagination mode
   itemIds?: string[]; // For multi-reference filtering in load_more mode
   layerTemplate?: Layer[]; // Layer template for rendering new items in load_more mode
+  // Full collection layer (sans children) — used by load-more (and filter)
+  // to rebuild proper item wrappers (link/action/attributes) when items are
+  // re-rendered client-side.
+  collectionLayer?: Omit<Layer, 'children'>;
 }
 
 // Conditional Visibility Types

@@ -41,10 +41,14 @@ export async function POST(
       itemIds,
       layerTemplate,
       collectionLayerId,
+      collectionLayer,
       published = true,
       localeCode,
       collectionLayerClasses,
       collectionLayerTag,
+      isPreview = false,
+      pageCollectionItemId,
+      pageCollectionSortedItemIds,
     } = body;
 
     // Validate required fields
@@ -133,6 +137,14 @@ export async function POST(
       undefined,
       collectionLayerClasses,
       collectionLayerTag,
+      {
+        isPreview: Boolean(isPreview),
+        pageCollectionItemId,
+        pageCollectionSortedItemIds: Array.isArray(pageCollectionSortedItemIds)
+          ? pageCollectionSortedItemIds
+          : undefined,
+      },
+      collectionLayer as Omit<Layer, 'children'> | undefined,
     );
 
     return noCache({
