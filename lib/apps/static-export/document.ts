@@ -295,8 +295,22 @@ const INTERACTIONS_BOOT_SCRIPT = `
     });
   }
 
+  function applyLoadTriggers() {
+    interactions.forEach(function (i) {
+      if (i.trigger !== 'load') return;
+      if (!matchesBreakpoint(i.breakpoints)) return;
+      i.tweens.forEach(function (t) {
+        var target = getEl(t.targetLayerId);
+        if (!target) return;
+        var value = t.toDisplay || t.fromDisplay;
+        if (value) setDisplay(target, value);
+      });
+    });
+  }
+
   function boot() {
     applyOnLoad();
+    applyLoadTriggers();
     window.addEventListener('resize', applyOnLoad);
 
     interactions.forEach(function (i) {
