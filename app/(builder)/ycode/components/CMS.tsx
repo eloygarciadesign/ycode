@@ -14,18 +14,49 @@ import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Empty, EmptyDescription, EmptyTitle } from '@/components/ui/empty';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+} from '@/components/ui/dropdown-menu';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import { cn } from '@/lib/utils';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue, SelectGroup } from '@/components/ui/select';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+  SelectGroup,
+} from '@/components/ui/select';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useCollectionsStore } from '@/stores/useCollectionsStore';
 import { useAssetsStore } from '@/stores/useAssetsStore';
 import { usePagesStore } from '@/stores/usePagesStore';
 import { useCollectionLayerStore } from '@/stores/useCollectionLayerStore';
-import { useCollaborationPresenceStore, getResourceLockKey } from '@/stores/useCollaborationPresenceStore';
+import {
+  useCollaborationPresenceStore,
+  getResourceLockKey,
+} from '@/stores/useCollaborationPresenceStore';
 import { useLiveCollectionUpdates } from '@/hooks/use-live-collection-updates';
 import { useResourceLock } from '@/hooks/use-resource-lock';
 import { collectionsApi } from '@/lib/api';
@@ -33,14 +64,31 @@ import { formatDate } from '@/lib/utils';
 import { formatDateInTimezone, formatDateOnly } from '@/lib/date-format-utils';
 import { toast } from 'sonner';
 import { useSettingsStore } from '@/stores/useSettingsStore';
-import { slugify, isTruthyBooleanValue, parseMultiReferenceValue, getSortParams } from '@/lib/collection-utils';
+import {
+  slugify,
+  isTruthyBooleanValue,
+  parseMultiReferenceValue,
+  getSortParams,
+} from '@/lib/collection-utils';
 import { getSampleCollectionOptions } from '@/lib/sample-collections';
 import { ASSET_CATEGORIES, getOptimizedImageUrl, isAssetOfType } from '@/lib/asset-utils';
 import { parseMultiAssetFieldValue } from '@/lib/multi-asset-utils';
-import { type FieldType, findDisplayField, getItemDisplayName, getFieldIcon, isMultipleAssetField, findStatusFieldId, isDateFieldType } from '@/lib/collection-field-utils';
+import {
+  type FieldType,
+  findDisplayField,
+  getItemDisplayName,
+  getFieldIcon,
+  isMultipleAssetField,
+  findStatusFieldId,
+  isDateFieldType,
+} from '@/lib/collection-field-utils';
 import { CollectionStatusPill, parseStatusValue } from './CollectionStatusPill';
 import { extractPlainTextFromTiptap } from '@/lib/tiptap-utils';
-import { extractCrossCollectionItemIds, parseCollectionLinkValue, resolveCollectionLinkValue } from '@/lib/link-utils';
+import {
+  extractCrossCollectionItemIds,
+  parseCollectionLinkValue,
+  resolveCollectionLinkValue,
+} from '@/lib/link-utils';
 import { useEditorUrl } from '@/hooks/use-editor-url';
 import { useRole } from '@/hooks/use-role';
 import FieldsDropdown from './FieldsDropdown';
@@ -53,12 +101,20 @@ import CollectionItemSheet from './CollectionItemSheet';
 import CSVImportDialog from './CSVImportDialog';
 import { CollaboratorBadge } from '@/components/collaboration/CollaboratorBadge';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import type { CollectionItemWithValues, CollectionField, Collection, CollectionFieldData } from '@/types';
+import type {
+  CollectionItemWithValues,
+  CollectionField,
+  Collection,
+  CollectionFieldData,
+} from '@/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import type { CollectionUsageResult, CollectionFieldUsageResult } from '@/lib/collection-usage-utils';
+import type {
+  CollectionUsageResult,
+  CollectionFieldUsageResult,
+} from '@/lib/collection-usage-utils';
 
 /**
  * Helper component to render reference field values in CMS list
@@ -70,7 +126,12 @@ interface ReferenceFieldCellProps {
   fields: Record<string, CollectionField[]>; // All fields by collection ID
 }
 
-function ReferenceFieldCell({ value, field, referenceItemsCache, fields }: ReferenceFieldCellProps) {
+function ReferenceFieldCell({
+  value,
+  field,
+  referenceItemsCache,
+  fields,
+}: ReferenceFieldCellProps) {
   if (!value || !field.reference_collection_id) {
     return <span className="text-muted-foreground">-</span>;
   }
@@ -125,21 +186,36 @@ interface SortableRowProps {
   lockInfo?: ItemLockInfo;
 }
 
-function SortableRow({ item, isSaving, isManualMode, isCollectionPublished, children, statusValue, onEdit, onSetAsDraft, onStageForPublish, onSetAsPublished, onDuplicate, onDelete, lockInfo }: SortableRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id, disabled: isSaving });
+function SortableRow({
+  item,
+  isSaving,
+  isManualMode,
+  isCollectionPublished,
+  children,
+  statusValue,
+  onEdit,
+  onSetAsDraft,
+  onStageForPublish,
+  onSetAsPublished,
+  onDuplicate,
+  onDelete,
+  lockInfo,
+}: SortableRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+    disabled: isSaving,
+  });
 
   const isLockedByOther = lockInfo?.isLocked;
   const isDisabled = isLockedByOther || isSaving;
 
-  const cursor =
-    isDisabled ? 'not-allowed' : isDragging ? 'grabbing' : isManualMode ? 'grab' : 'pointer';
+  const cursor = isDisabled
+    ? 'not-allowed'
+    : isDragging
+      ? 'grabbing'
+      : isManualMode
+        ? 'grab'
+        : 'pointer';
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -234,14 +310,9 @@ function SortableCollectionItem({
   onRenameCancel,
   onDelete,
 }: SortableCollectionItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: collection.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: collection.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -254,7 +325,7 @@ function SortableCollectionItem({
       <div
         className={cn(
           'pl-3 pr-1.5 h-8 rounded-lg flex gap-2 items-center',
-          isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary/50'
+          isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary/50',
         )}
       >
         <Icon name="database" className="size-3 shrink-0" />
@@ -281,7 +352,7 @@ function SortableCollectionItem({
             'px-3 h-8 rounded-lg flex gap-2 items-center justify-between text-left w-full group cursor-grab active:cursor-grabbing',
             isSelected
               ? 'bg-primary text-primary-foreground'
-              : 'hover:bg-secondary/50 text-secondary-foreground/80 dark:text-muted-foreground'
+              : 'hover:bg-secondary/50 text-secondary-foreground/80 dark:text-muted-foreground',
           )}
           onClick={onSelect}
           onDoubleClick={onDoubleClick}
@@ -294,50 +365,46 @@ function SortableCollectionItem({
           </div>
 
           {canManageSchema && (
-          <div className="group-hover:opacity-100 opacity-0">
-            <DropdownMenu
-              open={openDropdownId === collection.id}
-              onOpenChange={onDropdownOpenChange}
-            >
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="xs"
-                  variant={isSelected ? 'default' : 'ghost'}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  className="-mr-2"
-                >
-                  <Icon name="more" className="size-3" />
-                </Button>
-              </DropdownMenuTrigger>
+            <div className="group-hover:opacity-100 opacity-0">
+              <DropdownMenu
+                open={openDropdownId === collection.id}
+                onOpenChange={onDropdownOpenChange}
+              >
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="xs"
+                    variant={isSelected ? 'default' : 'ghost'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    className="-mr-2"
+                  >
+                    <Icon name="more" className="size-3" />
+                  </Button>
+                </DropdownMenuTrigger>
 
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={onRename}>
-                  Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={onDelete}>
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={onRename}>Rename</DropdownMenuItem>
+                  <DropdownMenuItem onClick={onDelete}>Delete</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
 
           <span className={cn('block text-xs opacity-50', canManageSchema && 'group-hover:hidden')}>
-            {isItemCountLoading ? <Spinner className="size-3" /> : (itemCount ?? collection.draft_items_count)}
+            {isItemCountLoading ? (
+              <Spinner className="size-3" />
+            ) : (
+              (itemCount ?? collection.draft_items_count)
+            )}
           </span>
         </div>
       </ContextMenuTrigger>
       {canManageSchema && (
-      <ContextMenuContent>
-        <ContextMenuItem onClick={onRename}>
-          Rename
-        </ContextMenuItem>
-        <ContextMenuItem onClick={onDelete}>
-          Delete
-        </ContextMenuItem>
-      </ContextMenuContent>
+        <ContextMenuContent>
+          <ContextMenuItem onClick={onRename}>Rename</ContextMenuItem>
+          <ContextMenuItem onClick={onDelete}>Delete</ContextMenuItem>
+        </ContextMenuContent>
       )}
     </ContextMenu>
   );
@@ -392,11 +459,20 @@ const CMS = React.memo(function CMS() {
   const getAsset = useAssetsStore((state) => state.getAsset);
   const pages = usePagesStore((state) => state.pages);
   const folders = usePagesStore((state) => state.folders);
-  const timezone = useSettingsStore((state) => state.settingsByKey.timezone as string | null) ?? 'UTC';
-  const refetchLayersForCollection = useCollectionLayerStore((state) => state.refetchLayersForCollection);
+  const timezone =
+    useSettingsStore((state) => state.settingsByKey.timezone as string | null) ?? 'UTC';
+  const refetchLayersForCollection = useCollectionLayerStore(
+    (state) => state.refetchLayersForCollection,
+  );
   const invalidateLayerData = useCollectionLayerStore((state) => state.invalidateLayerData);
 
-  const { urlState, navigateToCollection, navigateToCollectionItem, navigateToNewCollectionItem, navigateToCollections } = useEditorUrl();
+  const {
+    urlState,
+    navigateToCollection,
+    navigateToCollectionItem,
+    navigateToNewCollectionItem,
+    navigateToCollections,
+  } = useEditorUrl();
   const { canEditStructure: canManageSchema } = useRole();
 
   // Track previous collection ID to prevent unnecessary reloads
@@ -415,7 +491,9 @@ const CMS = React.memo(function CMS() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [showSkeleton, setShowSkeleton] = useState(false);
   // Cache for reference item display names: { collectionId: { itemId: displayName } }
-  const [referenceItemsCache, setReferenceItemsCache] = useState<Record<string, Record<string, string>>>({});
+  const [referenceItemsCache, setReferenceItemsCache] = useState<
+    Record<string, Record<string, string>>
+  >({});
 
   // Collection sidebar rename state
   const collectionRename = useInlineRename({
@@ -455,15 +533,12 @@ const CMS = React.memo(function CMS() {
   // CSV import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
 
-  const selectedCollection = collections.find(c => c.id === selectedCollectionId);
+  const selectedCollection = collections.find((c) => c.id === selectedCollectionId);
   const collectionFields = useMemo(
-    () => (selectedCollectionId ? (fields[selectedCollectionId] || []) : []),
-    [selectedCollectionId, fields]
+    () => (selectedCollectionId ? fields[selectedCollectionId] || [] : []),
+    [selectedCollectionId, fields],
   );
-  const statusFieldId = useMemo(
-    () => findStatusFieldId(collectionFields),
-    [collectionFields]
-  );
+  const statusFieldId = useMemo(() => findStatusFieldId(collectionFields), [collectionFields]);
 
   // Auto-select first collection when none is selected and collections are available
   useEffect(() => {
@@ -472,10 +547,10 @@ const CMS = React.memo(function CMS() {
     }
   }, [selectedCollectionId, collections, isLoading, setSelectedCollectionId]);
   const collectionItems = useMemo(
-    () => (selectedCollectionId ? (items[selectedCollectionId] || []) : []),
-    [selectedCollectionId, items]
+    () => (selectedCollectionId ? items[selectedCollectionId] || [] : []),
+    [selectedCollectionId, items],
   );
-  const totalItems = selectedCollectionId ? (itemsTotalCount[selectedCollectionId] || 0) : 0;
+  const totalItems = selectedCollectionId ? itemsTotalCount[selectedCollectionId] || 0 : 0;
 
   // Build slug map across ALL loaded collections for cross-collection link resolution
   const crossCollectionSlugs = useCollectionsStore((state) => state.crossCollectionSlugs);
@@ -485,7 +560,7 @@ const CMS = React.memo(function CMS() {
     const slugs: Record<string, string> = {};
     for (const collectionId of Object.keys(items)) {
       const colFields = fields[collectionId] || [];
-      const slugField = colFields.find(f => f.key === 'slug');
+      const slugField = colFields.find((f) => f.key === 'slug');
       if (!slugField) continue;
       for (const item of items[collectionId]) {
         const slugValue = item.values[slugField.id];
@@ -514,15 +589,25 @@ const CMS = React.memo(function CMS() {
     const currentFields = fields[selectedCollectionId];
     if (!currentItems?.length || !currentFields?.length) return;
 
-    const linkFieldIds = currentFields.filter(f => f.type === 'link').map(f => f.id);
+    const linkFieldIds = currentFields.filter((f) => f.type === 'link').map((f) => f.id);
     if (linkFieldIds.length === 0) return;
 
-    const missingIds = extractCrossCollectionItemIds(currentItems, linkFieldIds, allCollectionItemSlugs)
-      .filter(id => !(id in crossCollectionSlugs));
+    const missingIds = extractCrossCollectionItemIds(
+      currentItems,
+      linkFieldIds,
+      allCollectionItemSlugs,
+    ).filter((id) => !(id in crossCollectionSlugs));
     if (missingIds.length === 0) return;
 
     loadMissingItemSlugs(missingIds);
-  }, [selectedCollectionId, items, fields, allCollectionItemSlugs, crossCollectionSlugs, loadMissingItemSlugs]);
+  }, [
+    selectedCollectionId,
+    items,
+    fields,
+    allCollectionItemSlugs,
+    crossCollectionSlugs,
+    loadMissingItemSlugs,
+  ]);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -530,13 +615,15 @@ const CMS = React.memo(function CMS() {
       activationConstraint: {
         distance: 8, // Require 8px movement before drag starts
       },
-    })
+    }),
   );
 
   // Check if we're in manual sort mode
   const isManualMode = selectedCollection?.sorting?.direction === 'manual';
 
-  const { sortBy: currentSortBy, sortOrder: currentSortOrder } = getSortParams(selectedCollection?.sorting);
+  const { sortBy: currentSortBy, sortOrder: currentSortOrder } = getSortParams(
+    selectedCollection?.sorting,
+  );
 
   // Only show skeleton on initial load when no items are cached for the collection.
   // For subsequent reloads (page change, sort, search), keep showing current data.
@@ -599,12 +686,7 @@ const CMS = React.memo(function CMS() {
 
       // Only update URL if local state is different from URL state
       if (searchQuery !== urlSearch || currentPage !== urlPage || pageSize !== urlPageSize) {
-        navigateToCollection(
-          selectedCollectionId,
-          currentPage,
-          searchQuery || undefined,
-          pageSize
-        );
+        navigateToCollection(selectedCollectionId, currentPage, searchQuery || undefined, pageSize);
       }
     }, 100); // 100ms debounce
 
@@ -641,15 +723,22 @@ const CMS = React.memo(function CMS() {
         //    change, so we always re-fetch on switch to keep counts fresh.
         const initialPage = urlState.page || 1;
         const initialPageSize = urlState.pageSize || 25;
-        const hasCountField = (existingFields || []).some(f => f.type === 'count');
-        const needsLoad = !existingItems ||
+        const hasCountField = (existingFields || []).some((f) => f.type === 'count');
+        const needsLoad =
+          !existingItems ||
           existingItems.length === 0 ||
           initialPage > 1 ||
           (existingItems.length < totalCount && existingItems.length < initialPageSize) ||
           hasCountField;
 
         if (needsLoad) {
-          loadItems(selectedCollectionId, initialPage, initialPageSize, currentSortBy, currentSortOrder);
+          loadItems(
+            selectedCollectionId,
+            initialPage,
+            initialPageSize,
+            currentSortBy,
+            currentSortOrder,
+          );
         }
 
         // Mark initial load as complete
@@ -666,7 +755,15 @@ const CMS = React.memo(function CMS() {
       // Reset ref when no collection selected
       prevCollectionIdRef.current = null;
     }
-  }, [selectedCollectionId, urlState.page, urlState.pageSize, loadFields, loadItems, currentSortBy, currentSortOrder]);
+  }, [
+    selectedCollectionId,
+    urlState.page,
+    urlState.pageSize,
+    loadFields,
+    loadItems,
+    currentSortBy,
+    currentSortOrder,
+  ]);
 
   // Debounced field search - queries backend (only when user types, not on collection change)
   useEffect(() => {
@@ -707,7 +804,14 @@ const CMS = React.memo(function CMS() {
 
     const debounceTimer = setTimeout(() => {
       if (searchQuery.trim()) {
-        searchItems(selectedCollectionId, searchQuery, currentPage, pageSize, currentSortBy, currentSortOrder);
+        searchItems(
+          selectedCollectionId,
+          searchQuery,
+          currentPage,
+          pageSize,
+          currentSortBy,
+          currentSortOrder,
+        );
       } else {
         // If search is empty, reload all items
         loadItems(selectedCollectionId, currentPage, pageSize, currentSortBy, currentSortOrder);
@@ -729,11 +833,16 @@ const CMS = React.memo(function CMS() {
   }, [searchQuery]);
 
   // Reset to page 1 when sorting changes (only if user changed it, not on initial collection load)
-  const prevSortingRef = React.useRef<{ field?: string; direction?: string } | null | undefined>(undefined);
+  const prevSortingRef = React.useRef<{ field?: string; direction?: string } | null | undefined>(
+    undefined,
+  );
   useEffect(() => {
     // Only reset page if sorting changed from user input (not initial collection load)
     // Skip reset on first mount or when collection first loads (when prevSortingRef is undefined)
-    if (prevSortingRef.current !== undefined && prevSortingRef.current !== selectedCollection?.sorting) {
+    if (
+      prevSortingRef.current !== undefined &&
+      prevSortingRef.current !== selectedCollection?.sorting
+    ) {
       setCurrentPage(1);
     }
     prevSortingRef.current = selectedCollection?.sorting;
@@ -763,7 +872,14 @@ const CMS = React.memo(function CMS() {
         setCurrentPage(lastValidPage);
       }
     }
-  }, [collectionItems.length, totalItems, currentPage, pageSize, selectedCollectionId, showSkeleton]);
+  }, [
+    collectionItems.length,
+    totalItems,
+    currentPage,
+    pageSize,
+    selectedCollectionId,
+    showSkeleton,
+  ]);
 
   // Track fetched reference collections to prevent duplicate calls
   const fetchedReferenceCollections = React.useRef<Set<string>>(new Set());
@@ -780,7 +896,7 @@ const CMS = React.memo(function CMS() {
 
     // Find reference/multi_reference fields that need data
     const refFields = collectionFields.filter(
-      f => (f.type === 'reference' || f.type === 'multi_reference') && f.reference_collection_id
+      (f) => (f.type === 'reference' || f.type === 'multi_reference') && f.reference_collection_id,
     );
 
     if (refFields.length === 0) return;
@@ -788,8 +904,11 @@ const CMS = React.memo(function CMS() {
     // Collect all referenced collection IDs that we haven't fetched yet
     const collectionsToFetch = new Set<string>();
 
-    refFields.forEach(field => {
-      if (field.reference_collection_id && !fetchedReferenceCollections.current.has(field.reference_collection_id)) {
+    refFields.forEach((field) => {
+      if (
+        field.reference_collection_id &&
+        !fetchedReferenceCollections.current.has(field.reference_collection_id)
+      ) {
         collectionsToFetch.add(field.reference_collection_id);
       }
     });
@@ -815,7 +934,7 @@ const CMS = React.memo(function CMS() {
 
           // Build cache entries for all items in the collection
           newCache[collectionId] = {};
-          response.data.items.forEach(item => {
+          response.data.items.forEach((item) => {
             newCache[collectionId][item.id] = getItemDisplayName(item, displayField);
           });
         } catch (error) {
@@ -824,7 +943,7 @@ const CMS = React.memo(function CMS() {
       }
 
       if (Object.keys(newCache).length > 0) {
-        setReferenceItemsCache(prev => ({ ...prev, ...newCache }));
+        setReferenceItemsCache((prev) => ({ ...prev, ...newCache }));
       }
     };
 
@@ -845,7 +964,7 @@ const CMS = React.memo(function CMS() {
       setEditingItem(null);
       setShowItemSheet(true);
     } else if (urlState.itemId) {
-      const item = collectionItems.find(i => i.id === urlState.itemId);
+      const item = collectionItems.find((i) => i.id === urlState.itemId);
       if (item) {
         setEditingItem(item);
         setShowItemSheet(true);
@@ -945,17 +1064,19 @@ const CMS = React.memo(function CMS() {
       });
   };
 
-  const handleSetItemStatus = useCallback((itemId: string, action: 'draft' | 'stage' | 'publish') => {
-    if (!selectedCollectionId) return;
+  const handleSetItemStatus = useCallback(
+    (itemId: string, action: 'draft' | 'stage' | 'publish') => {
+      if (!selectedCollectionId) return;
 
-    setItemStatus(selectedCollectionId, itemId, action)
-      .catch((error) => {
+      setItemStatus(selectedCollectionId, itemId, action).catch((error) => {
         console.error('Failed to update item status:', error);
         toast.error('Failed to update item status', {
           description: 'Please try again.',
         });
       });
-  }, [selectedCollectionId, setItemStatus]);
+    },
+    [selectedCollectionId, setItemStatus],
+  );
 
   const handleDuplicateItem = (itemId: string) => {
     if (!selectedCollectionId) return;
@@ -1010,8 +1131,8 @@ const CMS = React.memo(function CMS() {
 
     if (!over || !selectedCollectionId) return;
 
-    const oldIndex = sortedItems.findIndex(item => item.id === active.id);
-    const newIndex = sortedItems.findIndex(item => item.id === over.id);
+    const oldIndex = sortedItems.findIndex((item) => item.id === active.id);
+    const newIndex = sortedItems.findIndex((item) => item.id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) return;
 
@@ -1062,7 +1183,7 @@ const CMS = React.memo(function CMS() {
 
     // Use the currently sorted field, or fall back to first visible field
     const currentSortField = selectedCollection?.sorting?.field;
-    const fieldId = currentSortField || collectionFields.find(f => !f.hidden)?.id;
+    const fieldId = currentSortField || collectionFields.find((f) => !f.hidden)?.id;
     if (!fieldId) return;
 
     // Switch to manual mode
@@ -1097,7 +1218,7 @@ const CMS = React.memo(function CMS() {
       setSelectedItemIds(new Set());
     } else {
       // Select all
-      setSelectedItemIds(new Set(sortedItems.map(item => item.id)));
+      setSelectedItemIds(new Set(sortedItems.map((item) => item.id)));
     }
   };
 
@@ -1117,19 +1238,22 @@ const CMS = React.memo(function CMS() {
     const storeState = useCollectionsStore.getState();
     const previousItems = storeState.items[selectedCollectionId] || [];
     const previousCount = storeState.itemsTotalCount[selectedCollectionId] || 0;
-    const deletedItems = previousItems.filter(item => selectedItemIds.has(item.id));
+    const deletedItems = previousItems.filter((item) => selectedItemIds.has(item.id));
 
     // Optimistically remove items from store
     useCollectionsStore.setState((state) => ({
       items: {
         ...state.items,
         [selectedCollectionId]: (state.items[selectedCollectionId] || []).filter(
-          item => !selectedItemIds.has(item.id)
+          (item) => !selectedItemIds.has(item.id),
         ),
       },
       itemsTotalCount: {
         ...state.itemsTotalCount,
-        [selectedCollectionId]: Math.max(0, (state.itemsTotalCount[selectedCollectionId] || 0) - count),
+        [selectedCollectionId]: Math.max(
+          0,
+          (state.itemsTotalCount[selectedCollectionId] || 0) - count,
+        ),
       },
     }));
 
@@ -1137,7 +1261,8 @@ const CMS = React.memo(function CMS() {
     setSelectedItemIds(new Set());
 
     // Fire and forget - handle errors with rollback
-    collectionsApi.bulkDeleteItems(itemIdsToDelete)
+    collectionsApi
+      .bulkDeleteItems(itemIdsToDelete)
       .then((response) => {
         if (response.error) {
           throw new Error(response.error);
@@ -1177,7 +1302,7 @@ const CMS = React.memo(function CMS() {
   const handleDeleteField = async (fieldId: string) => {
     if (!selectedCollectionId) return;
 
-    const field = collectionFields.find(f => f.id === fieldId);
+    const field = collectionFields.find((f) => f.id === fieldId);
     if (field?.key) {
       toast.error('Cannot delete built-in fields');
       return;
@@ -1217,7 +1342,7 @@ const CMS = React.memo(function CMS() {
   const handleHideField = async (fieldId: string) => {
     if (!selectedCollectionId) return;
 
-    const field = collectionFields.find(f => f.id === fieldId);
+    const field = collectionFields.find((f) => f.id === fieldId);
     if (!field) return;
 
     try {
@@ -1234,7 +1359,7 @@ const CMS = React.memo(function CMS() {
   const handleDuplicateField = async (fieldId: string) => {
     if (!selectedCollectionId) return;
 
-    const field = collectionFields.find(f => f.id === fieldId);
+    const field = collectionFields.find((f) => f.id === fieldId);
     if (!field) return;
 
     try {
@@ -1259,7 +1384,7 @@ const CMS = React.memo(function CMS() {
   const handleToggleFieldVisibility = async (fieldId: string) => {
     if (!selectedCollectionId) return;
 
-    const field = collectionFields.find(f => f.id === fieldId);
+    const field = collectionFields.find((f) => f.id === fieldId);
     if (!field) return;
 
     try {
@@ -1277,7 +1402,7 @@ const CMS = React.memo(function CMS() {
     if (!selectedCollectionId) return;
 
     try {
-      const fieldIds = reorderedFields.map(f => f.id);
+      const fieldIds = reorderedFields.map((f) => f.id);
       await collectionsApi.reorderFields(selectedCollectionId, fieldIds);
       // Reload fields to show new order (reorder API doesn't return updated fields)
       await loadFields(selectedCollectionId);
@@ -1292,20 +1417,16 @@ const CMS = React.memo(function CMS() {
     try {
       if (editingField) {
         // Update existing field
-        const mergedData = data.data
-          ? { ...editingField.data, ...data.data }
-          : editingField.data;
+        const mergedData = data.data ? { ...editingField.data, ...data.data } : editingField.data;
 
         // Detect option renames or removals so we refresh the item list
         // after the server propagates renames / clears removed values.
         const previousOptions = Array.isArray(editingField.data?.options)
           ? editingField.data.options
           : [];
-        const nextOptions = Array.isArray(data.data?.options)
-          ? data.data.options
-          : [];
-        const previousById = new Map(previousOptions.map(o => [o.id, o.name]));
-        const nextIds = new Set(nextOptions.map(o => o.id));
+        const nextOptions = Array.isArray(data.data?.options) ? data.data.options : [];
+        const previousById = new Map(previousOptions.map((o) => [o.id, o.name]));
+        const nextIds = new Set(nextOptions.map((o) => o.id));
         const isOptionField = editingField.type === 'option';
         const hasOptionRename =
           isOptionField &&
@@ -1314,7 +1435,7 @@ const CMS = React.memo(function CMS() {
             return typeof previousName === 'string' && previousName.trim() !== next.name.trim();
           });
         const hasOptionRemoval =
-          isOptionField && previousOptions.some(prev => !nextIds.has(prev.id));
+          isOptionField && previousOptions.some((prev) => !nextIds.has(prev.id));
 
         const previousCountCfg = editingField.data?.count;
         const nextCountCfg = data.data?.count;
@@ -1370,7 +1491,7 @@ const CMS = React.memo(function CMS() {
       let collectionName = baseName;
       let counter = 1;
 
-      while (collections.some(c => c.name === collectionName)) {
+      while (collections.some((c) => c.name === collectionName)) {
         collectionName = `${baseName} ${counter}`;
         counter++;
       }
@@ -1398,7 +1519,7 @@ const CMS = React.memo(function CMS() {
   const handleCreateSampleCollection = (sampleId: string) => {
     // Defer state changes so the dropdown menu can finish its close animation
     requestAnimationFrame(async () => {
-      const sample = getSampleCollectionOptions().find(s => s.id === sampleId);
+      const sample = getSampleCollectionOptions().find((s) => s.id === sampleId);
       const tempId = `temp-sample-${Date.now()}`;
       const optimisticCollection: Collection = {
         id: tempId,
@@ -1413,7 +1534,7 @@ const CMS = React.memo(function CMS() {
         draft_items_count: 0,
       };
 
-      useCollectionsStore.setState(state => ({
+      useCollectionsStore.setState((state) => ({
         collections: [...state.collections, optimisticCollection],
       }));
       setSelectedCollectionId(tempId);
@@ -1423,8 +1544,8 @@ const CMS = React.memo(function CMS() {
       try {
         const collection = await createSampleCollection(sampleId);
 
-        useCollectionsStore.setState(state => ({
-          collections: state.collections.filter(c => c.id !== tempId),
+        useCollectionsStore.setState((state) => ({
+          collections: state.collections.filter((c) => c.id !== tempId),
         }));
 
         setSelectedCollectionId(collection.id);
@@ -1435,8 +1556,8 @@ const CMS = React.memo(function CMS() {
         }
       } catch (error) {
         console.error('Failed to create sample collection:', error);
-        useCollectionsStore.setState(state => ({
-          collections: state.collections.filter(c => c.id !== tempId),
+        useCollectionsStore.setState((state) => ({
+          collections: state.collections.filter((c) => c.id !== tempId),
         }));
         toast.error('Failed to create sample collection');
       } finally {
@@ -1505,7 +1626,7 @@ const CMS = React.memo(function CMS() {
       activationConstraint: {
         distance: 5,
       },
-    })
+    }),
   );
 
   const handleCollectionDragEnd = (event: DragEndEvent) => {
@@ -1515,8 +1636,8 @@ const CMS = React.memo(function CMS() {
       return;
     }
 
-    const oldIndex = collections.findIndex(c => c.id === active.id);
-    const newIndex = collections.findIndex(c => c.id === over.id);
+    const oldIndex = collections.findIndex((c) => c.id === active.id);
+    const newIndex = collections.findIndex((c) => c.id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) {
       return;
@@ -1526,7 +1647,7 @@ const CMS = React.memo(function CMS() {
     const [movedItem] = newOrder.splice(oldIndex, 1);
     newOrder.splice(newIndex, 0, movedItem);
 
-    reorderCollections(newOrder.map(c => c.id));
+    reorderCollections(newOrder.map((c) => c.id));
   };
 
   const handleEditFieldClick = (field: CollectionField) => {
@@ -1539,526 +1660,608 @@ const CMS = React.memo(function CMS() {
   const tableContent = React.useMemo(() => {
     return (
       <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
+        sensors={sensors} collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={sortedItems.map(item => item.id)}
+          items={sortedItems.map((item) => item.id)}
           strategy={verticalListSortingStrategy}
         >
           <div className={cn('flex flex-col', sortedItems.length === 0 && 'flex-1')}>
-            <table className={cn('border-0 whitespace-nowrap text-xs min-w-full align-top border-separate border-spacing-0 [&>tbody>tr>td]:border-b [&>tbody>tr>td]:max-w-56', sortedItems.length === 0 && 'flex-1')}>
+            <table
+              className={cn(
+                'border-0 whitespace-nowrap text-xs min-w-full align-top border-separate border-spacing-0 [&>tbody>tr>td]:border-b [&>tbody>tr>td]:max-w-56',
+                sortedItems.length === 0 && 'flex-1',
+              )}
+            >
               <thead className="">
                 <tr className="">
                   <th className="pl-5 pr-3 py-5 text-left font-normal w-12 sticky top-0 z-10 bg-background border-b border-border">
                     <div className="flex">
-                    <Checkbox
-                      checked={sortedItems.length > 0 && selectedItemIds.size === sortedItems.length}
-                      onCheckedChange={handleSelectAll}
-                      disabled={showSkeleton}
-                    />
+                      <Checkbox
+                        checked={
+                          sortedItems.length > 0 && selectedItemIds.size === sortedItems.length
+                        }
+                        onCheckedChange={handleSelectAll}
+                        disabled={showSkeleton}
+                      />
                     </div>
                   </th>
 
-                  {collectionFields.filter(f => !f.hidden).map((field) => {
-                    const sorting = selectedCollection?.sorting;
-                    const isActiveSort = sorting?.field === field.id;
-                    const sortIcon = isActiveSort && sorting ? (
-                      sorting.direction === 'manual' ? 'M' :
-                        sorting.direction === 'asc' ? '↑' :
-                          '↓'
-                    ) : null;
+                  {collectionFields
+                    .filter((f) => !f.hidden)
+                    .map((field) => {
+                      const sorting = selectedCollection?.sorting;
+                      const isActiveSort = sorting?.field === field.id;
+                      const sortIcon =
+                        isActiveSort && sorting
+                          ? sorting.direction === 'manual'
+                            ? 'M'
+                            : sorting.direction === 'asc'
+                              ? '↑'
+                              : '↓'
+                          : null;
 
-                    return (
-                      <th key={field.id} className="px-4 py-5 text-left font-normal sticky top-0 z-20 bg-background border-b border-border">
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => !showSkeleton && handleColumnClick(field.id)}
-                            className="flex items-center gap-1 hover:opacity-50 cursor-pointer max-w-40"
-                            style={{ pointerEvents: showSkeleton ? 'none' : 'auto' }}
-                          >
-                            <span className="truncate">{field.name}</span>
-                            {sortIcon && (
-                              <span className="text-xs font-mono">
-                                {sortIcon}
-                              </span>
+                      return (
+                        <th
+                          key={field.id}
+                          className="px-4 py-5 text-left font-normal sticky top-0 z-20 bg-background border-b border-border"
+                        >
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => !showSkeleton && handleColumnClick(field.id)}
+                              className="flex items-center gap-1 hover:opacity-50 cursor-pointer max-w-40"
+                              style={{ pointerEvents: showSkeleton ? 'none' : 'auto' }}
+                            >
+                              <span className="truncate">{field.name}</span>
+                              {sortIcon && <span className="text-xs font-mono">{sortIcon}</span>}
+                            </button>
+                            {canManageSchema && (
+                              <DropdownMenu
+                                open={openDropdownId === field.id}
+                                onOpenChange={(open) =>
+                                  !showSkeleton && setOpenDropdownId(open ? field.id : null)
+                                }
+                              >
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    size="xs"
+                                    variant="ghost"
+                                    className="-my-2"
+                                    disabled={showSkeleton}
+                                  >
+                                    <Icon name="more" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                  <DropdownMenuItem
+                                    onSelect={() => handleEditFieldClick(field)}
+                                    disabled={!!field.key}
+                                  >
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDuplicateField(field.id)}
+                                    disabled={!!field.key}
+                                  >
+                                    Duplicate
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleHideField(field.id)}
+                                    disabled={field.name.toLowerCase() === 'name'}
+                                  >
+                                    {field.hidden ? 'Show' : 'Hide'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteField(field.id)}
+                                    disabled={!!field.key}
+                                  >
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             )}
-                          </button>
-                          {canManageSchema && (
-                          <DropdownMenu
-                            open={openDropdownId === field.id}
-                            onOpenChange={(open) => !showSkeleton && setOpenDropdownId(open ? field.id : null)}
-                          >
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                size="xs"
-                                variant="ghost"
-                                className="-my-2"
-                                disabled={showSkeleton}
-                              >
-                                <Icon name="more" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              <DropdownMenuItem
-                                onSelect={() => handleEditFieldClick(field)}
-                                disabled={!!field.key}
-                              >
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDuplicateField(field.id)}
-                                disabled={!!field.key}
-                              >
-                                Duplicate
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleHideField(field.id)}
-                                disabled={field.name.toLowerCase() === 'name'}
-                              >
-                                {field.hidden ? 'Show' : 'Hide'}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteField(field.id)}
-                                disabled={!!field.key}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          )}
-                        </div>
-                      </th>
-                    );
-                  })}
+                          </div>
+                        </th>
+                      );
+                    })}
                   {canManageSchema && (
-                  <th className="px-4 py-3 text-left font-medium text-sm w-24 sticky right-0 top-0 z-20 bg-background border-b border-border">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={showSkeleton}
-                      onClick={() => { setEditingField(null); setFieldDialogOpen(true); }}
-                    >
-                      <Icon name="plus" />
-                      Add field
-                    </Button>
-                  </th>
+                    <th className="px-4 py-3 text-left font-medium text-sm w-24 sticky right-0 top-0 z-20 bg-background border-b border-border">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={showSkeleton}
+                        onClick={() => {
+                          setEditingField(null);
+                          setFieldDialogOpen(true);
+                        }}
+                      >
+                        <Icon name="plus" />
+                        Add field
+                      </Button>
+                    </th>
                   )}
                   <th className="sticky top-0 z-10 bg-background border-b border-border" />
                 </tr>
               </thead>
               <tbody>
-              {showSkeleton && totalItems > 0 ? (
-                // Skeleton loading rows - show exact expected number
-                Array.from({ length: Math.min(pageSize, totalItems) }).map((_, index) => (
-                  <tr key={`skeleton-${index}`}>
-                    <td className="pl-5 pr-3 py-5 w-12">
-                      <div className="w-4 h-4 bg-secondary rounded animate-pulse" />
-                    </td>
-                    {collectionFields.filter(f => !f.hidden).map((field) => (
-                      <td key={field.id} className="px-4 py-5">
-                        <div className={`h-4 bg-secondary/50 rounded-[6px] animate-pulse ${field.type === 'status' ? 'w-12' : 'w-1/3'}`} />
+                {showSkeleton && totalItems > 0 ? (
+                  // Skeleton loading rows - show exact expected number
+                  Array.from({ length: Math.min(pageSize, totalItems) }).map((_, index) => (
+                    <tr key={`skeleton-${index}`}>
+                      <td className="pl-5 pr-3 py-5 w-12">
+                        <div className="w-4 h-4 bg-secondary rounded animate-pulse" />
                       </td>
-                    ))}
-                    <td className="px-4 py-3"></td>
-                  </tr>
-                ))
-              ) : showSkeleton ? (
-                // No skeleton rows when totalItems is 0
-                null
-              ) : sortedItems.length > 0 ? (
-                sortedItems.map((item) => (
-                  <SortableRow
-                    key={item.id}
-                    item={item}
-                    isSaving={isTempId(item.id)}
-                    isManualMode={isManualMode}
-                    isCollectionPublished={selectedCollection?.has_published_version ?? false}
-                    statusValue={statusFieldId ? parseStatusValue(item.values[statusFieldId]) : null}
-                    onEdit={() => handleEditItem(item)}
-                    onSetAsDraft={() => handleSetItemStatus(item.id, 'draft')}
-                    onStageForPublish={() => handleSetItemStatus(item.id, 'stage')}
-                    onSetAsPublished={() => handleSetItemStatus(item.id, 'publish')}
-                    onDuplicate={() => handleDuplicateItem(item.id)}
-                    onDelete={() => handleDeleteItem(item.id)}
-                    lockInfo={getItemLockInfo(item.id)}
-                  >
-                    <td
-                      className="pl-5 pr-3 py-3 w-12"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditItem(item);
-                      }}
+                      {collectionFields
+                        .filter((f) => !f.hidden)
+                        .map((field) => (
+                          <td key={field.id} className="px-4 py-5">
+                            <div
+                              className={`h-4 bg-secondary/50 rounded-[6px] animate-pulse ${field.type === 'status' ? 'w-12' : 'w-1/3'}`}
+                            />
+                          </td>
+                        ))}
+                      <td className="px-4 py-3"></td>
+                    </tr>
+                  ))
+                ) : showSkeleton ? // No skeleton rows when totalItems is 0
+                  null : sortedItems.length > 0 ? (
+                    sortedItems.map((item) => (
+                    <SortableRow
+                      key={item.id}
+                      item={item}
+                      isSaving={isTempId(item.id)}
+                      isManualMode={isManualMode}
+                      isCollectionPublished={selectedCollection?.has_published_version ?? false}
+                      statusValue={
+                        statusFieldId ? parseStatusValue(item.values[statusFieldId]) : null
+                      }
+                      onEdit={() => handleEditItem(item)}
+                      onSetAsDraft={() => handleSetItemStatus(item.id, 'draft')}
+                      onStageForPublish={() => handleSetItemStatus(item.id, 'stage')}
+                      onSetAsPublished={() => handleSetItemStatus(item.id, 'publish')}
+                      onDuplicate={() => handleDuplicateItem(item.id)}
+                      onDelete={() => handleDeleteItem(item.id)}
+                      lockInfo={getItemLockInfo(item.id)}
                     >
-                      <div className="flex">
-                      {isTempId(item.id) ? (
-                        <Spinner className="size-4 opacity-50" />
-                      ) : (
-                        <Checkbox
-                          checked={selectedItemIds.has(item.id)}
-                          onCheckedChange={() => handleToggleItemSelection(item.id)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      )}
-                      </div>
-                    </td>
-                    {collectionFields.filter(f => !f.hidden).map((field) => {
-                      if (field.type === 'status') {
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4 py-5"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <CollectionStatusPill
-                              statusValue={statusFieldId ? parseStatusValue(item.values[statusFieldId]) : null}
+                      <td
+                        className="pl-5 pr-3 py-3 w-12"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditItem(item);
+                        }}
+                      >
+                        <div className="flex">
+                          {isTempId(item.id) ? (
+                            <Spinner className="size-4 opacity-50" />
+                          ) : (
+                            <Checkbox
+                              checked={selectedItemIds.has(item.id)}
+                              onCheckedChange={() => handleToggleItemSelection(item.id)}
+                              onClick={(e) => e.stopPropagation()}
                             />
-                          </td>
-                        );
-                      }
+                          )}
+                        </div>
+                      </td>
+                      {collectionFields
+                        .filter((f) => !f.hidden)
+                        .map((field) => {
+                          if (field.type === 'status') {
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4 py-5"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <CollectionStatusPill
+                                  statusValue={
+                                    statusFieldId
+                                      ? parseStatusValue(item.values[statusFieldId])
+                                      : null
+                                  }
+                                />
+                              </td>
+                            );
+                          }
 
-                      const value = item.values[field.id];
+                          const value = item.values[field.id];
 
-                      // Format date fields in user's timezone
-                      if (isDateFieldType(field.type) && value) {
-                        const displayValue = field.type === 'date_only'
-                          ? formatDateOnly(value)
-                          : formatDateInTimezone(value, timezone, 'display');
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4 py-5 text-muted-foreground"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <span className="line-clamp-1 truncate">
-                              {displayValue}
-                            </span>
-                          </td>
-                        );
-                      }
+                          // Format date fields in user's timezone
+                          if (isDateFieldType(field.type) && value) {
+                            const displayValue =
+                              field.type === 'date_only'
+                                ? formatDateOnly(value)
+                                : formatDateInTimezone(value, timezone, 'display');
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4 py-5 text-muted-foreground"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <span className="line-clamp-1 truncate">{displayValue}</span>
+                              </td>
+                            );
+                          }
 
-                      // Image fields - show thumbnail (match file manager: SVG inline, raster via img + checkerboard)
-                      if (field.type === 'image' && value) {
-                        const assetIds: string[] = isMultipleAssetField(field)
-                          ? parseMultiAssetFieldValue(value)
-                          : [value as string];
+                          // Image fields - show thumbnail (match file manager: SVG inline, raster via img + checkerboard)
+                          if (field.type === 'image' && value) {
+                            const assetIds: string[] = isMultipleAssetField(field)
+                              ? parseMultiAssetFieldValue(value)
+                              : [value as string];
 
-                        if (assetIds.length === 0) {
-                          return (
-                            <td
-                              key={field.id}
-                              className="px-4 py-5 text-muted-foreground"
-                              onClick={() => handleEditItem(item)}
-                            >
-                              -
-                            </td>
-                          );
-                        }
+                            if (assetIds.length === 0) {
+                              return (
+                                <td
+                                  key={field.id}
+                                  className="px-4 py-5 text-muted-foreground"
+                                  onClick={() => handleEditItem(item)}
+                                >
+                                  -
+                                </td>
+                              );
+                            }
 
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <div className="flex items-center gap-1 -my-1.5">
-                              {assetIds.slice(0, 3).map((assetId, idx) => {
-                                const asset = getAsset(assetId);
-                                const isSvgIcon = asset && (!!asset.content || (asset.mime_type && isAssetOfType(asset.mime_type, ASSET_CATEGORIES.ICONS)));
-                                const imageUrl = asset?.public_url ?? null;
-                                const showCheckerboard = asset && (isSvgIcon || !!imageUrl);
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <div className="flex items-center gap-1 -my-1.5">
+                                  {assetIds.slice(0, 3).map((assetId, idx) => {
+                                    const asset = getAsset(assetId);
+                                    const isSvgIcon =
+                                      asset &&
+                                      (!!asset.content ||
+                                        (asset.mime_type &&
+                                          isAssetOfType(asset.mime_type, ASSET_CATEGORIES.ICONS)));
+                                    const imageUrl = asset?.public_url ?? null;
+                                    const showCheckerboard = asset && (isSvgIcon || !!imageUrl);
 
-                                return asset ? (
-                                  <Tooltip key={assetId} disableHoverableContent>
-                                    <TooltipTrigger asChild>
-                                      <div className="relative size-8 rounded-[6px] overflow-hidden bg-secondary/30 inline-block">
-                                        {showCheckerboard && (
-                                          <div className="absolute inset-0 opacity-10 bg-checkerboard" />
-                                        )}
-                                        {isSvgIcon && asset.content ? (
-                                          <div
-                                            data-icon
-                                            className="relative w-full h-full flex items-center justify-center p-1 pointer-events-none text-foreground z-10"
-                                            dangerouslySetInnerHTML={{ __html: asset.content }}
-                                          />
-                                        ) : imageUrl ? (
-                                          <img
-                                            src={getOptimizedImageUrl(imageUrl)}
-                                            alt={asset.filename || 'Image'}
-                                            className="relative w-full h-full object-contain pointer-events-none z-10"
-                                            loading="lazy"
-                                          />
-                                        ) : (
-                                          <div className="absolute inset-0 flex items-center justify-center z-10">
-                                            <Icon name="image" className="size-3.5 text-muted-foreground" />
+                                    return asset ? (
+                                      <Tooltip key={assetId} disableHoverableContent>
+                                        <TooltipTrigger asChild>
+                                          <div className="relative size-8 rounded-[6px] overflow-hidden bg-secondary/30 inline-block">
+                                            {showCheckerboard && (
+                                              <div className="absolute inset-0 opacity-10 bg-checkerboard" />
+                                            )}
+                                            {isSvgIcon && asset.content ? (
+                                              <div
+                                                data-icon
+                                                className="relative w-full h-full flex items-center justify-center p-1 pointer-events-none text-foreground z-10"
+                                                dangerouslySetInnerHTML={{ __html: asset.content }}
+                                              />
+                                            ) : imageUrl ? (
+                                              <img
+                                                src={getOptimizedImageUrl(imageUrl)}
+                                                alt={asset.filename || 'Image'}
+                                                className="relative w-full h-full object-contain pointer-events-none z-10"
+                                                loading="lazy"
+                                              />
+                                            ) : (
+                                              <div className="absolute inset-0 flex items-center justify-center z-10">
+                                                <Icon
+                                                  name="image"
+                                                  className="size-3.5 text-muted-foreground"
+                                                />
+                                              </div>
+                                            )}
                                           </div>
-                                        )}
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{asset.filename}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : (
+                                      <div
+                                        key={idx}
+                                        className="relative size-8 rounded-[6px] overflow-hidden bg-secondary/30 inline-block"
+                                      >
+                                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                                          <Icon
+                                            name="image"
+                                            className="size-3.5 text-muted-foreground"
+                                          />
+                                        </div>
                                       </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>{asset.filename}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ) : (
-                                  <div key={idx} className="relative size-8 rounded-[6px] overflow-hidden bg-secondary/30 inline-block">
-                                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                                      <Icon name="image" className="size-3.5 text-muted-foreground" />
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                              {assetIds.length > 3 && (
-                                <span className="text-xs text-muted-foreground line-clamp-1 truncate">+{assetIds.length - 3}</span>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      }
+                                    );
+                                  })}
+                                  {assetIds.length > 3 && (
+                                    <span className="text-xs text-muted-foreground line-clamp-1 truncate">
+                                      +{assetIds.length - 3}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          }
 
-                      // Audio/Video/Document fields - show icon with filename in tooltip
-                      if ((field.type === 'audio' || field.type === 'video' || field.type === 'document') && value) {
-                        const assetIds: string[] = isMultipleAssetField(field)
-                          ? parseMultiAssetFieldValue(value)
-                          : [value as string];
+                          // Audio/Video/Document fields - show icon with filename in tooltip
+                          if (
+                            (field.type === 'audio' ||
+                              field.type === 'video' ||
+                              field.type === 'document') &&
+                            value
+                          ) {
+                            const assetIds: string[] = isMultipleAssetField(field)
+                              ? parseMultiAssetFieldValue(value)
+                              : [value as string];
 
-                        if (assetIds.length === 0) {
-                          return (
-                            <td
-                              key={field.id}
-                              className="px-4 py-5 text-muted-foreground"
-                              onClick={() => handleEditItem(item)}
-                            >
-                              -
-                            </td>
-                          );
-                        }
+                            if (assetIds.length === 0) {
+                              return (
+                                <td
+                                  key={field.id}
+                                  className="px-4 py-5 text-muted-foreground"
+                                  onClick={() => handleEditItem(item)}
+                                >
+                                  -
+                                </td>
+                              );
+                            }
 
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <div className="flex items-center gap-1 -my-1.5">
-                              {assetIds.slice(0, 3).map((assetId, idx) => {
-                                const asset = getAsset(assetId);
-                                return asset ? (
-                                  <Tooltip key={assetId} disableHoverableContent>
-                                    <TooltipTrigger asChild>
-                                      <div className="relative size-8 rounded-[6px] overflow-hidden bg-secondary/30 flex items-center justify-center">
-                                        <Icon name={getFieldIcon(field.type)} className="size-3.5 text-muted-foreground" />
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <div className="flex items-center gap-1 -my-1.5">
+                                  {assetIds.slice(0, 3).map((assetId, idx) => {
+                                    const asset = getAsset(assetId);
+                                    return asset ? (
+                                      <Tooltip key={assetId} disableHoverableContent>
+                                        <TooltipTrigger asChild>
+                                          <div className="relative size-8 rounded-[6px] overflow-hidden bg-secondary/30 flex items-center justify-center">
+                                            <Icon
+                                              name={getFieldIcon(field.type)}
+                                              className="size-3.5 text-muted-foreground"
+                                            />
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{asset.filename}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : (
+                                      <div
+                                        key={idx}
+                                        className="relative size-8 rounded-[6px] overflow-hidden bg-secondary/30 flex items-center justify-center"
+                                      >
+                                        <Icon
+                                          name={getFieldIcon(field.type)}
+                                          className="size-3.5 text-muted-foreground"
+                                        />
                                       </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>{asset.filename}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ) : (
-                                  <div key={idx} className="relative size-8 rounded-[6px] overflow-hidden bg-secondary/30 flex items-center justify-center">
-                                    <Icon name={getFieldIcon(field.type)} className="size-3.5 text-muted-foreground" />
-                                  </div>
-                                );
-                              })}
-                              {assetIds.length > 3 && (
-                                <span className="text-xs text-muted-foreground line-clamp-1 truncate">+{assetIds.length - 3}</span>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      }
+                                    );
+                                  })}
+                                  {assetIds.length > 3 && (
+                                    <span className="text-xs text-muted-foreground line-clamp-1 truncate">
+                                      +{assetIds.length - 3}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          }
 
-                      // Reference and multi-reference fields
-                      if ((field.type === 'reference' || field.type === 'multi_reference') && field.reference_collection_id) {
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4 py-5 text-muted-foreground"
-                            onClick={() => handleEditItem(item)}
-                          >
+                          // Reference and multi-reference fields
+                          if (
+                            (field.type === 'reference' || field.type === 'multi_reference') &&
+                            field.reference_collection_id
+                          ) {
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4 py-5 text-muted-foreground"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <ReferenceFieldCell
+                                  value={value}
+                                  field={field}
+                                  referenceItemsCache={referenceItemsCache}
+                                  fields={fields}
+                                />
+                              </td>
+                            );
+                          }
 
-                            <ReferenceFieldCell
-                              value={value}
-                              field={field}
-                              referenceItemsCache={referenceItemsCache}
-                              fields={fields}
-                            />
-                          </td>
-                        );
-                      }
+                          // Rich text fields - extract plain text and truncate
+                          if (field.type === 'rich_text') {
+                            const plainText = extractPlainTextFromTiptap(value);
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4 py-5 text-muted-foreground max-w-50"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <span className="block truncate">{plainText || '-'}</span>
+                              </td>
+                            );
+                          }
 
-                      // Rich text fields - extract plain text and truncate
-                      if (field.type === 'rich_text') {
-                        const plainText = extractPlainTextFromTiptap(value);
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4 py-5 text-muted-foreground max-w-50"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <span className="block truncate">
-                              {plainText || '-'}
-                            </span>
-                          </td>
-                        );
-                      }
+                          // Link fields - format for display
+                          if (field.type === 'link') {
+                            let displayValue = '-';
+                            let isAssetLink = false;
+                            if (value) {
+                              try {
+                                const linkValue =
+                                  typeof value === 'string'
+                                    ? parseCollectionLinkValue(value)
+                                    : value;
+                                if (linkValue) {
+                                  if (linkValue.type === 'asset' && linkValue.asset?.id) {
+                                    const asset = getAsset(linkValue.asset.id);
+                                    displayValue = asset?.filename || linkValue.asset.id;
+                                    isAssetLink = true;
+                                  } else {
+                                    const resolvedUrl = resolveCollectionLinkValue(linkValue, {
+                                      pages,
+                                      folders,
+                                      collectionItemSlugs: allCollectionItemSlugs,
+                                      isPreview: false,
+                                      locale: undefined,
+                                    });
 
-                      // Link fields - format for display
-                      if (field.type === 'link') {
-                        let displayValue = '-';
-                        let isAssetLink = false;
-                        if (value) {
-                          try {
-                            const linkValue = typeof value === 'string' ? parseCollectionLinkValue(value) : value;
-                            if (linkValue) {
-                              if (linkValue.type === 'asset' && linkValue.asset?.id) {
-                                const asset = getAsset(linkValue.asset.id);
-                                displayValue = asset?.filename || linkValue.asset.id;
-                                isAssetLink = true;
-                              } else {
-                                const resolvedUrl = resolveCollectionLinkValue(linkValue, {
-                                  pages,
-                                  folders,
-                                  collectionItemSlugs: allCollectionItemSlugs,
-                                  isPreview: false,
-                                  locale: undefined,
-                                });
-
-                                displayValue = resolvedUrl || '-';
+                                    displayValue = resolvedUrl || '-';
+                                  }
+                                }
+                              } catch {
+                                displayValue = String(value);
                               }
                             }
-                          } catch {
-                            displayValue = String(value);
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4 py-5 text-muted-foreground max-w-50"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <span className="flex items-center gap-1.5 truncate">
+                                  {isAssetLink && (
+                                    <Icon name="paperclip" className="size-3 shrink-0" />
+                                  )}
+                                  <span className="truncate">{displayValue}</span>
+                                </span>
+                              </td>
+                            );
                           }
-                        }
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4 py-5 text-muted-foreground max-w-50"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <span className="flex items-center gap-1.5 truncate">
-                              {isAssetLink && (
-                                <Icon
-                                  name="paperclip"
-                                  className="size-3 shrink-0"
-                                />
-                              )}
-                              <span className="truncate">{displayValue}</span>
-                            </span>
-                          </td>
-                        );
-                      }
 
-                      // Color fields - display as color swatch
-                      if (field.type === 'color' && value) {
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4 py-5 text-muted-foreground"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="size-5 rounded border border-white/10 shrink-0"
-                                style={{ backgroundColor: value as string }}
-                              />
-                              <span className="text-xs">{value}</span>
-                            </div>
-                          </td>
-                        );
-                      }
+                          // Color fields - display as color swatch
+                          if (field.type === 'color' && value) {
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4 py-5 text-muted-foreground"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="size-5 rounded border border-white/10 shrink-0"
+                                    style={{ backgroundColor: value as string }}
+                                  />
+                                  <span className="text-xs">{value}</span>
+                                </div>
+                              </td>
+                            );
+                          }
 
-                      // Boolean fields - display as readonly switch
-                      if (field.type === 'boolean') {
-                        const isTrue = isTruthyBooleanValue(value);
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4 py-5"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <div className="pointer-events-none">
-                              <Checkbox
-                                checked={isTrue}
-                                tabIndex={-1}
-                                aria-hidden="true"
-                              />
-                            </div>
-                          </td>
-                        );
-                      }
+                          // Boolean fields - display as readonly switch
+                          if (field.type === 'boolean') {
+                            const isTrue = isTruthyBooleanValue(value);
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4 py-5"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <div className="pointer-events-none">
+                                  <Checkbox
+                                    checked={isTrue} tabIndex={-1}
+                                    aria-hidden="true"
+                                  />
+                                </div>
+                              </td>
+                            );
+                          }
 
-                      // Option fields - display as Badge with the option name
-                      if (field.type === 'option') {
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4 py-5"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            {value ? (
-                              <Badge variant="secondary" className="font-normal">
-                                <span className="line-clamp-1 truncate max-w-50">{value}</span>
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </td>
-                        );
-                      }
+                          // Option fields - display as Badge with the option name
+                          if (field.type === 'option') {
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4 py-5"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                {value ? (
+                                  <Badge variant="secondary" className="font-normal">
+                                    <span className="line-clamp-1 truncate max-w-50">{value}</span>
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </td>
+                            );
+                          }
 
-                      // Count fields - computed numeric value, defaults to 0
-                      if (field.type === 'count') {
-                        const numeric = value != null && value !== '' ? value : '0';
-                        return (
-                          <td
-                            key={field.id}
-                            className="px-4 py-5 text-muted-foreground tabular-nums"
-                            onClick={() => handleEditItem(item)}
-                          >
-                            <span className="line-clamp-1 truncate">{numeric}</span>
-                          </td>
-                        );
-                      }
+                          // Count fields - computed numeric value, defaults to 0
+                          if (field.type === 'count') {
+                            const numeric = value != null && value !== '' ? value : '0';
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4 py-5 text-muted-foreground tabular-nums"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <span className="line-clamp-1 truncate">{numeric}</span>
+                              </td>
+                            );
+                          }
 
-                      return (
-                        <td
-                          key={field.id}
-                          className="px-4 py-5 text-muted-foreground"
-                          onClick={() => handleEditItem(item)}
-                        >
-                          <span className="line-clamp-1 truncate">
-                            {value || '-'}
-                          </span>
-                        </td>
-                      );
-                    })}
-                    <td className="px-4 py-3"></td>
-                  </SortableRow>
-                ))
-              ) : (
-                <tr className="group">
-                  <td colSpan={collectionFields.filter(f => !f.hidden).length + 3} className="px-4">
-                    {searchQuery ? (
-                      <div className="text-muted-foreground py-32 text-center">
-                        No items found matching &quot;{searchQuery}&quot;
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center gap-4 py-32">
-                        <Empty className="max-w-sm">
-                          <EmptyTitle>No Items</EmptyTitle>
-                          <EmptyDescription>
-                            This collection has no items yet. Add your first item to get started.
-                          </EmptyDescription>
-                        </Empty>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              )}
-            </tbody>
+                          // Repeater fields - show row count
+                          if (field.type === 'repeater') {
+                            let rowCount = 0;
+                            if (value) {
+                              try {
+                                const parsed =
+                                  typeof value === 'string' ? JSON.parse(value) : value;
+                                if (Array.isArray(parsed)) rowCount = parsed.length;
+                              } catch {
+                                rowCount = 0;
+                              }
+                            }
+                            return (
+                              <td
+                                key={field.id}
+                                className="px-4 py-5 text-muted-foreground"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <span className="line-clamp-1 truncate">
+                                  {rowCount > 0
+                                    ? `${rowCount} row${rowCount !== 1 ? 's' : ''}`
+                                    : '-'}
+                                </span>
+                              </td>
+                            );
+                          }
+
+                          return (
+                            <td
+                              key={field.id}
+                              className="px-4 py-5 text-muted-foreground"
+                              onClick={() => handleEditItem(item)}
+                            >
+                              <span className="line-clamp-1 truncate">{value || '-'}</span>
+                            </td>
+                          );
+                        })}
+                      <td className="px-4 py-3"></td>
+                    </SortableRow>
+                    ))
+                  ) : (
+                  <tr className="group">
+                    <td
+                      colSpan={collectionFields.filter((f) => !f.hidden).length + 3}
+                      className="px-4"
+                    >
+                      {searchQuery ? (
+                        <div className="text-muted-foreground py-32 text-center">
+                          No items found matching &quot;{searchQuery}&quot;
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center gap-4 py-32">
+                          <Empty className="max-w-sm">
+                            <EmptyTitle>No Items</EmptyTitle>
+                            <EmptyDescription>
+                              This collection has no items yet. Add your first item to get started.
+                            </EmptyDescription>
+                          </Empty>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                  )}
+              </tbody>
             </table>
           </div>
         </SortableContext>
@@ -2066,10 +2269,33 @@ const CMS = React.memo(function CMS() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    sortedItems, collectionFields, isManualMode, selectedItemIds, selectedCollection?.sorting, openDropdownId, fieldDialogOpen, searchQuery, statusFieldId,
-    collectionItems.length, showSkeleton, totalItems, pageSize, handleSelectAll, handleColumnClick, handleEditFieldClick, handleDuplicateField,
-    handleHideField, handleDeleteField, handleFieldDialogSubmit, handleDragEnd, handleSetItemStatus, handleDuplicateItem, handleDeleteItem, handleEditItem,
-    handleToggleItemSelection, sensors,
+    sortedItems,
+    collectionFields,
+    isManualMode,
+    selectedItemIds,
+    selectedCollection?.sorting,
+    openDropdownId,
+    fieldDialogOpen,
+    searchQuery,
+    statusFieldId,
+    collectionItems.length,
+    showSkeleton,
+    totalItems,
+    pageSize,
+    handleSelectAll,
+    handleColumnClick,
+    handleEditFieldClick,
+    handleDuplicateField,
+    handleHideField,
+    handleDeleteField,
+    handleFieldDialogSubmit,
+    handleDragEnd,
+    handleSetItemStatus,
+    handleDuplicateItem,
+    handleDeleteItem,
+    handleEditItem,
+    handleToggleItemSelection,
+    sensors,
   ]);
 
   // Collections sidebar component
@@ -2084,7 +2310,7 @@ const CMS = React.memo(function CMS() {
             'px-3 h-8 rounded-lg flex gap-2 items-center text-left w-full',
             cmsSection === 'globals'
               ? 'bg-primary text-primary-foreground'
-              : 'hover:bg-secondary/50 text-secondary-foreground/80 dark:text-muted-foreground'
+              : 'hover:bg-secondary/50 text-secondary-foreground/80 dark:text-muted-foreground',
           )}
         >
           <Icon name="globe" className="size-3.5 shrink-0" />
@@ -2095,38 +2321,31 @@ const CMS = React.memo(function CMS() {
       <header className="py-5 flex items-center justify-between shrink-0">
         <span className="font-medium">Collections</span>
         {canManageSchema && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              size="xs"
-              variant="secondary"
-            >
-              <Icon name="plus" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleCreateCollection}>
-              New collection
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                Samples
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                {getSampleCollectionOptions().map(option => (
-                  <DropdownMenuItem
-                    key={option.id}
-                    onClick={() => handleCreateSampleCollection(option.id)}
-                  >
-                    <Icon name="database" className="size-3 shrink-0" />
-                    {option.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="xs" variant="secondary">
+                <Icon name="plus" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleCreateCollection}>New collection</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Samples</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {getSampleCollectionOptions().map((option) => (
+                    <DropdownMenuItem
+                      key={option.id}
+                      onClick={() => handleCreateSampleCollection(option.id)}
+                    >
+                      <Icon name="database" className="size-3 shrink-0" />
+                      {option.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </header>
       <div className="flex-1 overflow-y-auto no-scrollbar">
@@ -2136,7 +2355,7 @@ const CMS = React.memo(function CMS() {
           onDragEnd={handleCollectionDragEnd}
         >
           <SortableContext
-            items={collections.map(c => c.id)}
+            items={collections.map((c) => c.id)}
             strategy={verticalListSortingStrategy}
           >
             <div className="flex flex-col">
@@ -2144,7 +2363,9 @@ const CMS = React.memo(function CMS() {
                 <SortableCollectionItem
                   key={collection.id}
                   collection={collection}
-                  isSelected={cmsSection === 'collections' && selectedCollectionId === collection.id}
+                  isSelected={
+                    cmsSection === 'collections' && selectedCollectionId === collection.id
+                  }
                   isHovered={hoveredCollectionId === collection.id}
                   openDropdownId={collectionDropdownId}
                   isRenaming={canManageSchema && collectionRename.renamingId === collection.id}
@@ -2154,10 +2375,14 @@ const CMS = React.memo(function CMS() {
                   canManageSchema={canManageSchema}
                   onRenameValueChange={collectionRename.setRenameValue}
                   onSelect={() => handleCollectionSelect(collection.id)}
-                  onDoubleClick={canManageSchema ? () => handleCollectionDoubleClick(collection) : () => {}}
+                  onDoubleClick={
+                    canManageSchema ? () => handleCollectionDoubleClick(collection) : () => {}
+                  }
                   onMouseEnter={() => setHoveredCollectionId(collection.id)}
                   onMouseLeave={() => setHoveredCollectionId(null)}
-                  onDropdownOpenChange={(open) => setCollectionDropdownId(open ? collection.id : null)}
+                  onDropdownOpenChange={(open) =>
+                    setCollectionDropdownId(open ? collection.id : null)
+                  }
                   onRename={() => handleCollectionDoubleClick(collection)}
                   onRenameSubmit={collectionRename.submitRename}
                   onRenameCancel={collectionRename.cancelRename}
@@ -2209,445 +2434,510 @@ const CMS = React.memo(function CMS() {
     <div className="flex-1 bg-background flex min-w-0">
       {collectionsSidebar}
       <div className="flex-1 flex flex-col min-w-0">
-
-      <div className="p-4 flex items-center justify-between border-b">
-
-        <div className="flex items-center gap-1.5">
-          <InputGroup className="w-full max-w-72">
-            <InputGroupInput
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              disabled={showSkeleton}
-            />
-            <InputGroupAddon>
-              <Icon name="search" className="size-3" />
-            </InputGroupAddon>
-          </InputGroup>
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={isLoading || showSkeleton}
-            aria-label="Refresh items"
-            onClick={() => {
-              if (!selectedCollectionId) return;
-              if (searchQuery.trim()) {
-                searchItems(selectedCollectionId, searchQuery, currentPage, pageSize, currentSortBy, currentSortOrder);
-              } else {
-                loadItems(selectedCollectionId, currentPage, pageSize, currentSortBy, currentSortOrder);
-              }
-            }}
-          >
-            <Icon
-              name="refresh"
-              className={cn('size-3', isLoading && !showSkeleton && 'animate-spin')}
-            />
-          </Button>
-        </div>
-
-        <div className="flex gap-2">
-          {selectedItemIds.size > 0 && (
+        <div className="p-4 flex items-center justify-between border-b">
+          <div className="flex items-center gap-1.5">
+            <InputGroup className="w-full max-w-72">
+              <InputGroupInput
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                disabled={showSkeleton}
+              />
+              <InputGroupAddon>
+                <Icon name="search" className="size-3" />
+              </InputGroupAddon>
+            </InputGroup>
             <Button
               size="sm"
-              variant="destructive"
-              onClick={handleDeleteSelected}
-              disabled={showSkeleton}
+              variant="ghost"
+              disabled={isLoading || showSkeleton}
+              aria-label="Refresh items"
+              onClick={() => {
+                if (!selectedCollectionId) return;
+                if (searchQuery.trim()) {
+                  searchItems(
+                    selectedCollectionId,
+                    searchQuery,
+                    currentPage,
+                    pageSize,
+                    currentSortBy,
+                    currentSortOrder,
+                  );
+                } else {
+                  loadItems(
+                    selectedCollectionId,
+                    currentPage,
+                    pageSize,
+                    currentSortBy,
+                    currentSortOrder,
+                  );
+                }
+              }}
             >
-              Delete
-              <Badge variant="secondary" className="text-[10px] px-1.5">{selectedItemIds.size}</Badge>
+              <Icon
+                name="refresh"
+                className={cn('size-3', isLoading && !showSkeleton && 'animate-spin')}
+              />
             </Button>
-          )}
-
-          {selectedCollectionId && (
-            <AirtableSyncButton
-              collectionId={selectedCollectionId}
-              onSyncComplete={() => loadItems(selectedCollectionId, currentPage, pageSize, currentSortBy, currentSortOrder)}
-            />
-          )}
-
-          {canManageSchema && (
-          <FieldsDropdown
-            fields={collectionFields}
-            searchQuery={fieldSearchQuery}
-            onSearchChange={setFieldSearchQuery}
-            onToggleVisibility={handleToggleFieldVisibility}
-            onReorder={handleReorderFields}
-          />
-          )}
-
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setImportDialogOpen(true)}
-            disabled={!selectedCollectionId || collectionFields.length === 0}
-          >
-            <Icon name="upload" />
-            Import
-          </Button>
-
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleCreateItem}
-            disabled={collectionFields.length === 0 || showSkeleton}
-          >
-            <Icon name="plus" />
-            New Item
-          </Button>
-        </div>
-      </div>
-
-      {/* Items Content */}
-      <div className="flex-1 overflow-auto flex flex-col min-w-0">
-        {loadingSampleCollectionId === selectedCollectionId || selectedCollectionId?.startsWith('temp-') ? (
-          <div className="flex flex-col items-center justify-center gap-4 p-8 flex-1">
-            <Spinner />
-            <span className="text-sm text-muted-foreground">Creating collection...</span>
           </div>
-        ) : collectionFields.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-4 p-8">
-            <Empty>
-              <EmptyTitle>No Fields Defined</EmptyTitle>
-              <EmptyDescription>
-                This collection has no fields. Add fields to start managing items.
-              </EmptyDescription>
-            </Empty>
-            {canManageSchema && (
-            <Button onClick={() => { setEditingField(null); setFieldDialogOpen(true); }}>
-              <Icon name="plus" />
-              Add Field
-            </Button>
-            )}
-          </div>
-        ) : (
-          <>
-            {tableContent}
-          </>
-        )}
-      </div>
 
-      {/* Add Item Button - outside scroll container so it's always visible */}
-      {!showSkeleton && collectionFields.length > 0 && sortedItems.length > 1 && (
-        <div className="group cursor-pointer border-t" onClick={handleCreateItem}>
-          <div className="grid grid-flow-col text-muted-foreground group-hover:bg-secondary/50">
-            <div className="px-4 py-4">
-              <Button size="xs" variant="ghost">
-                <Icon name="plus" />
+          <div className="flex gap-2">
+            {selectedItemIds.size > 0 && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleDeleteSelected}
+                disabled={showSkeleton}
+              >
+                Delete
+                <Badge variant="secondary" className="text-[10px] px-1.5">
+                  {selectedItemIds.size}
+                </Badge>
               </Button>
+            )}
+
+            {selectedCollectionId && (
+              <AirtableSyncButton
+                collectionId={selectedCollectionId}
+                onSyncComplete={() =>
+                  loadItems(
+                    selectedCollectionId,
+                    currentPage,
+                    pageSize,
+                    currentSortBy,
+                    currentSortOrder,
+                  )
+                }
+              />
+            )}
+
+            {canManageSchema && (
+              <FieldsDropdown
+                fields={collectionFields}
+                searchQuery={fieldSearchQuery}
+                onSearchChange={setFieldSearchQuery}
+                onToggleVisibility={handleToggleFieldVisibility}
+                onReorder={handleReorderFields}
+              />
+            )}
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setImportDialogOpen(true)}
+              disabled={!selectedCollectionId || collectionFields.length === 0}
+            >
+              <Icon name="upload" />
+              Import
+            </Button>
+
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleCreateItem}
+              disabled={collectionFields.length === 0 || showSkeleton}
+            >
+              <Icon name="plus" />
+              New Item
+            </Button>
+          </div>
+        </div>
+
+        {/* Items Content */}
+        <div className="flex-1 overflow-auto flex flex-col min-w-0">
+          {loadingSampleCollectionId === selectedCollectionId ||
+          selectedCollectionId?.startsWith('temp-') ? (
+            <div className="flex flex-col items-center justify-center gap-4 p-8 flex-1">
+              <Spinner />
+              <span className="text-sm text-muted-foreground">Creating collection...</span>
+            </div>
+            ) : collectionFields.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-4 p-8">
+              <Empty>
+                <EmptyTitle>No Fields Defined</EmptyTitle>
+                <EmptyDescription>
+                  This collection has no fields. Add fields to start managing items.
+                </EmptyDescription>
+              </Empty>
+              {canManageSchema && (
+                <Button
+                  onClick={() => {
+                    setEditingField(null);
+                    setFieldDialogOpen(true);
+                  }}
+                >
+                  <Icon name="plus" />
+                  Add Field
+                </Button>
+              )}
+            </div>
+            ) : (
+            <>{tableContent}</>
+            )}
+        </div>
+
+        {/* Add Item Button - outside scroll container so it's always visible */}
+        {!showSkeleton && collectionFields.length > 0 && sortedItems.length > 1 && (
+          <div className="group cursor-pointer border-t" onClick={handleCreateItem}>
+            <div className="grid grid-flow-col text-muted-foreground group-hover:bg-secondary/50">
+              <div className="px-4 py-4">
+                <Button size="xs" variant="ghost">
+                  <Icon name="plus" />
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Sheet for Create/Edit Item - only render when open to avoid animation issues */}
-      {showItemSheet && (
-        <CollectionItemSheet
-          open={true}
-          onOpenChange={(open) => {
-            if (!open) {
+        {/* Sheet for Create/Edit Item - only render when open to avoid animation issues */}
+        {showItemSheet && (
+          <CollectionItemSheet
+            open={true}
+            onOpenChange={(open) => {
+              if (!open) {
+                setShowItemSheet(false);
+                setEditingItem(null);
+                if (selectedCollectionId) {
+                  navigateToCollection(
+                    selectedCollectionId,
+                    currentPage,
+                    searchQuery || undefined,
+                    pageSize,
+                  );
+                }
+              }
+            }}
+            collectionId={selectedCollectionId!}
+            itemId={editingItem?.id || null}
+            onSuccess={() => {
               setShowItemSheet(false);
               setEditingItem(null);
               if (selectedCollectionId) {
-                navigateToCollection(selectedCollectionId, currentPage, searchQuery || undefined, pageSize);
+                navigateToCollection(
+                  selectedCollectionId,
+                  currentPage,
+                  searchQuery || undefined,
+                  pageSize,
+                );
               }
-            }
-          }}
-          collectionId={selectedCollectionId!}
-          itemId={editingItem?.id || null}
-          onSuccess={() => {
-            setShowItemSheet(false);
-            setEditingItem(null);
-            if (selectedCollectionId) {
-              navigateToCollection(selectedCollectionId, currentPage, searchQuery || undefined, pageSize);
+            }}
+          />
+        )}
+
+        {/* Pagination Controls - outside scroll container so it's always visible at bottom */}
+        {selectedCollectionId &&
+          (showSkeleton || sortedItems.length > 0 || totalItems > 0 || currentPage > 1) && (
+            <div className="flex items-center justify-between px-4 py-4 border-t">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Show:</span>
+                {showSkeleton ? (
+                  <div className="w-20 h-8 bg-secondary/50 rounded-lg animate-pulse" />
+                ) : (
+                  <Select
+                    value={pageSize.toString()}
+                    onValueChange={(value) => setPageSize(Number(value))}
+                    disabled={showSkeleton}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4">
+                {showSkeleton ? (
+                  <div className="h-4 w-48 bg-secondary/50 rounded-[6px] animate-pulse" />
+                ) : totalItems === 0 ? (
+                  <p className="text-xs text-muted-foreground">No results</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Showing {(currentPage - 1) * pageSize + 1} to{' '}
+                    {Math.min(currentPage * pageSize, totalItems)} of {totalItems} results
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || showSkeleton}
+                >
+                  Previous
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  disabled={currentPage * pageSize >= totalItems || showSkeleton}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+        )}
+
+        {/* Field Create/Edit Dialog */}
+        <FieldFormDialog
+          field={editingField}
+          currentCollectionId={selectedCollectionId || undefined}
+          onSubmit={handleFieldDialogSubmit}
+          open={fieldDialogOpen}
+          onOpenChange={(open) => {
+            setFieldDialogOpen(open);
+            if (!open) {
+              setEditingField(null);
             }
           }}
         />
-      )}
 
-      {/* Pagination Controls - outside scroll container so it's always visible at bottom */}
-      {selectedCollectionId && (showSkeleton || sortedItems.length > 0 || totalItems > 0 || currentPage > 1) && (
-        <div className="flex items-center justify-between px-4 py-4 border-t">
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Show:</span>
-            {showSkeleton ? (
-              <div className="w-20 h-8 bg-secondary/50 rounded-lg animate-pulse" />
-            ) : (
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => setPageSize(Number(value))}
-                disabled={showSkeleton}
-              >
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          <div className="flex items-center gap-4">
-            {showSkeleton ? (
-              <div className="h-4 w-48 bg-secondary/50 rounded-[6px] animate-pulse" />
-            ) : totalItems === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No results
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} results
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1 || showSkeleton}
-            >
-              Previous
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setCurrentPage(p => p + 1)}
-              disabled={currentPage * pageSize >= totalItems || showSkeleton}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Field Create/Edit Dialog */}
-      <FieldFormDialog
-        field={editingField}
-        currentCollectionId={selectedCollectionId || undefined}
-        onSubmit={handleFieldDialogSubmit}
-        open={fieldDialogOpen}
-        onOpenChange={(open) => {
-          setFieldDialogOpen(open);
-          if (!open) {
-            setEditingField(null);
-          }
-        }}
-      />
-
-      {/* Confirm Dialogs */}
-      <ConfirmDialog
-        open={deleteItemDialogOpen}
-        onOpenChange={(open) => {
-          setDeleteItemDialogOpen(open);
-          if (!open) setDeleteItemId(null);
-        }}
-        title="Delete item"
-        description="Are you sure you want to delete this item?"
-        confirmLabel="Delete"
-        onConfirm={handleConfirmDeleteItem}
-      />
-      <ConfirmDialog
-        open={deleteSelectedDialogOpen}
-        onOpenChange={(open) => {
-          setDeleteSelectedDialogOpen(open);
-        }}
-        title={`Delete ${selectedItemIds.size} item${selectedItemIds.size === 1 ? '' : 's'}`}
-        description={`Are you sure you want to delete ${selectedItemIds.size} item${selectedItemIds.size === 1 ? '' : 's'}?`}
-        confirmLabel="Delete"
-        onConfirm={handleConfirmDeleteSelected}
-      />
-      <ConfirmDialog
-        open={deleteFieldDialogOpen}
-        onOpenChange={(open) => {
-          setDeleteFieldDialogOpen(open);
-          if (!open) {
-            setTimeout(() => {
-              setDeleteFieldId(null);
-              setFieldUsage(null);
-              setLoadingFieldUsage(false);
-            }, 200);
-          }
-        }}
-        title={fieldUsage && fieldUsage.total > 0 ? 'Field in use' : 'Delete field'}
-        confirmLabel="Delete"
-        confirmVariant="destructive"
-        disableConfirm={loadingFieldUsage || (fieldUsage !== null && fieldUsage.total > 0)}
-        onConfirm={handleConfirmDeleteField}
-      >
-        {loadingFieldUsage ? (
-          <span className="flex items-center gap-2">
-            <Spinner />
-            Checking field usage...
-          </span>
-        ) : fieldUsage && fieldUsage.total > 0 ? (
-          <div className="space-y-3">
-            <p>
-              This field cannot be deleted because it is still being used. Remove all references before deleting.
-            </p>
-            <div className="space-y-2 text-muted-foreground">
-              {fieldUsage.pages.length > 0 && (
-                <div>
-                  <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
-                    <span className="text-foreground">Page collection layers</span>
-                    <span>&mdash;</span>
-                    <span>{fieldUsage.pages.length} item{fieldUsage.pages.length > 1 ? 's' : ''}</span>
-                  </div>
-                  <ul className="list-disc list-inside space-y-0.5 ml-1">
-                    {fieldUsage.pages.map((p) => (
-                      <li key={p.id}>{p.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {fieldUsage.components.length > 0 && (
-                <div>
-                  <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
-                    <span className="text-foreground">Components</span>
-                    <span>&mdash;</span>
-                    <span>{fieldUsage.components.length} item{fieldUsage.components.length > 1 ? 's' : ''}</span>
-                  </div>
-                  <ul className="list-disc list-inside space-y-0.5 ml-1">
-                    {fieldUsage.components.map((c) => (
-                      <li key={c.id}>{c.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          'Are you sure you want to delete this field? This will remove it from all items.'
-        )}
-      </ConfirmDialog>
-      <ConfirmDialog
-        open={deleteCollectionDialogOpen}
-        onOpenChange={(open) => {
-          setDeleteCollectionDialogOpen(open);
-          if (!open) {
-            setTimeout(() => {
-              setDeleteCollectionId(null);
-              setCollectionUsage(null);
-              setLoadingCollectionUsage(false);
-            }, 200);
-          }
-        }}
-        title={collectionUsage && collectionUsage.total > 0 ? 'Collection in use' : 'Delete collection'}
-        confirmLabel="Delete"
-        confirmVariant="destructive"
-        disableConfirm={loadingCollectionUsage || (collectionUsage !== null && collectionUsage.total > 0)}
-        onConfirm={handleConfirmDeleteCollection}
-      >
-        {loadingCollectionUsage ? (
-          <span className="flex items-center gap-2">
-            <Spinner />
-            Checking collection usage...
-          </span>
-        ) : collectionUsage && collectionUsage.total > 0 ? (
-          <div className="space-y-3">
-            <p>
-              <span className="text-foreground">
-                {collections.find(c => c.id === deleteCollectionId)?.name ?? 'This collection'}
-              </span>{' '}
-              cannot be deleted because it is still being used. Remove all references before deleting.
-            </p>
-            <div className="space-y-2 text-muted-foreground">
-              {collectionUsage.pages.length > 0 && (
-                <div>
-                  <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
-                    <span className="text-foreground">Page collection layers</span>
-                    <span>&mdash;</span>
-                    <span>{collectionUsage.pages.length} item{collectionUsage.pages.length > 1 ? 's' : ''}</span>
-                  </div>
-                  <ul className="list-disc list-inside space-y-0.5 ml-1">
-                    {collectionUsage.pages.map((p) => (
-                      <li key={p.id}>{p.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {collectionUsage.components.length > 0 && (
-                <div>
-                  <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
-                    <span className="text-foreground">Components</span>
-                    <span>&mdash;</span>
-                    <span>{collectionUsage.components.length} item{collectionUsage.components.length > 1 ? 's' : ''}</span>
-                  </div>
-                  <ul className="list-disc list-inside space-y-0.5 ml-1">
-                    {collectionUsage.components.map((c) => (
-                      <li key={c.id}>{c.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {collectionUsage.referenceFields.length > 0 && (
-                <div>
-                  <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
-                    <span className="text-foreground">Reference fields</span>
-                    <span>&mdash;</span>
-                    <span>{collectionUsage.referenceFields.length} field{collectionUsage.referenceFields.length > 1 ? 's' : ''}</span>
-                  </div>
-                  <ul className="list-disc list-inside space-y-0.5 ml-1">
-                    {collectionUsage.referenceFields.map((f) => (
-                      <li key={f.id}>
-                        Field &quot;{f.name}&quot; in &quot;{f.collectionName}&quot;
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {collectionUsage.airtableConnections.length > 0 && (
-                <div>
-                  <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
-                    <span className="text-foreground">Airtable sync</span>
-                    <span>&mdash;</span>
-                    <span>{collectionUsage.airtableConnections.length} connection{collectionUsage.airtableConnections.length > 1 ? 's' : ''}</span>
-                  </div>
-                  <ul className="list-disc list-inside space-y-0.5 ml-1">
-                    {collectionUsage.airtableConnections.map((c) => (
-                      <li key={c.id}>{c.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <p>
-            Are you sure you want to delete &quot;{collections.find(c => c.id === deleteCollectionId)?.name ?? 'this collection'}&quot;? This action cannot be undone.
-          </p>
-        )}
-      </ConfirmDialog>
-      <ConfirmDialog
-        open={switchToManualDialogOpen}
-        onOpenChange={(open) => {
-          setSwitchToManualDialogOpen(open);
-          if (!open) setPendingDragEvent(null);
-        }}
-        title="Switch to manual order"
-        description="You cannot manually order CMS items when they are sorted by a specific field or a search filter is applied. Do you want to switch to manual sorting and remove any search filter?"
-        confirmLabel="Switch to manual order"
-        confirmVariant="default"
-        onConfirm={handleConfirmSwitchToManual}
-      />
-
-      {/* CSV Import Dialog */}
-      {selectedCollectionId && (
-        <CSVImportDialog
-          open={importDialogOpen}
-          onOpenChange={setImportDialogOpen}
-          collectionId={selectedCollectionId}
-          fields={collectionFields}
-          onImportComplete={() => {
-            loadItems(selectedCollectionId, currentPage, pageSize, currentSortBy, currentSortOrder);
+        {/* Confirm Dialogs */}
+        <ConfirmDialog
+          open={deleteItemDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteItemDialogOpen(open);
+            if (!open) setDeleteItemId(null);
           }}
+          title="Delete item"
+          description="Are you sure you want to delete this item?"
+          confirmLabel="Delete"
+          onConfirm={handleConfirmDeleteItem}
         />
-      )}
+        <ConfirmDialog
+          open={deleteSelectedDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteSelectedDialogOpen(open);
+          }}
+          title={`Delete ${selectedItemIds.size} item${selectedItemIds.size === 1 ? '' : 's'}`}
+          description={`Are you sure you want to delete ${selectedItemIds.size} item${selectedItemIds.size === 1 ? '' : 's'}?`}
+          confirmLabel="Delete"
+          onConfirm={handleConfirmDeleteSelected}
+        />
+        <ConfirmDialog
+          open={deleteFieldDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteFieldDialogOpen(open);
+            if (!open) {
+              setTimeout(() => {
+                setDeleteFieldId(null);
+                setFieldUsage(null);
+                setLoadingFieldUsage(false);
+              }, 200);
+            }
+          }}
+          title={fieldUsage && fieldUsage.total > 0 ? 'Field in use' : 'Delete field'}
+          confirmLabel="Delete"
+          confirmVariant="destructive"
+          disableConfirm={loadingFieldUsage || (fieldUsage !== null && fieldUsage.total > 0)}
+          onConfirm={handleConfirmDeleteField}
+        >
+          {loadingFieldUsage ? (
+            <span className="flex items-center gap-2">
+              <Spinner />
+              Checking field usage...
+            </span>
+          ) : fieldUsage && fieldUsage.total > 0 ? (
+            <div className="space-y-3">
+              <p>
+                This field cannot be deleted because it is still being used. Remove all references
+                before deleting.
+              </p>
+              <div className="space-y-2 text-muted-foreground">
+                {fieldUsage.pages.length > 0 && (
+                  <div>
+                    <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
+                      <span className="text-foreground">Page collection layers</span>
+                      <span>&mdash;</span>
+                      <span>
+                        {fieldUsage.pages.length} item{fieldUsage.pages.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <ul className="list-disc list-inside space-y-0.5 ml-1">
+                      {fieldUsage.pages.map((p) => (
+                        <li key={p.id}>{p.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {fieldUsage.components.length > 0 && (
+                  <div>
+                    <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
+                      <span className="text-foreground">Components</span>
+                      <span>&mdash;</span>
+                      <span>
+                        {fieldUsage.components.length} item
+                        {fieldUsage.components.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <ul className="list-disc list-inside space-y-0.5 ml-1">
+                      {fieldUsage.components.map((c) => (
+                        <li key={c.id}>{c.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            'Are you sure you want to delete this field? This will remove it from all items.'
+          )}
+        </ConfirmDialog>
+        <ConfirmDialog
+          open={deleteCollectionDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteCollectionDialogOpen(open);
+            if (!open) {
+              setTimeout(() => {
+                setDeleteCollectionId(null);
+                setCollectionUsage(null);
+                setLoadingCollectionUsage(false);
+              }, 200);
+            }
+          }}
+          title={
+            collectionUsage && collectionUsage.total > 0 ? 'Collection in use' : 'Delete collection'
+          }
+          confirmLabel="Delete"
+          confirmVariant="destructive"
+          disableConfirm={
+            loadingCollectionUsage || (collectionUsage !== null && collectionUsage.total > 0)
+          }
+          onConfirm={handleConfirmDeleteCollection}
+        >
+          {loadingCollectionUsage ? (
+            <span className="flex items-center gap-2">
+              <Spinner />
+              Checking collection usage...
+            </span>
+          ) : collectionUsage && collectionUsage.total > 0 ? (
+            <div className="space-y-3">
+              <p>
+                <span className="text-foreground">
+                  {collections.find((c) => c.id === deleteCollectionId)?.name ?? 'This collection'}
+                </span>{' '}
+                cannot be deleted because it is still being used. Remove all references before
+                deleting.
+              </p>
+              <div className="space-y-2 text-muted-foreground">
+                {collectionUsage.pages.length > 0 && (
+                  <div>
+                    <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
+                      <span className="text-foreground">Page collection layers</span>
+                      <span>&mdash;</span>
+                      <span>
+                        {collectionUsage.pages.length} item
+                        {collectionUsage.pages.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <ul className="list-disc list-inside space-y-0.5 ml-1">
+                      {collectionUsage.pages.map((p) => (
+                        <li key={p.id}>{p.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {collectionUsage.components.length > 0 && (
+                  <div>
+                    <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
+                      <span className="text-foreground">Components</span>
+                      <span>&mdash;</span>
+                      <span>
+                        {collectionUsage.components.length} item
+                        {collectionUsage.components.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <ul className="list-disc list-inside space-y-0.5 ml-1">
+                      {collectionUsage.components.map((c) => (
+                        <li key={c.id}>{c.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {collectionUsage.referenceFields.length > 0 && (
+                  <div>
+                    <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
+                      <span className="text-foreground">Reference fields</span>
+                      <span>&mdash;</span>
+                      <span>
+                        {collectionUsage.referenceFields.length} field
+                        {collectionUsage.referenceFields.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <ul className="list-disc list-inside space-y-0.5 ml-1">
+                      {collectionUsage.referenceFields.map((f) => (
+                        <li key={f.id}>
+                          Field &quot;{f.name}&quot; in &quot;{f.collectionName}&quot;
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {collectionUsage.airtableConnections.length > 0 && (
+                  <div>
+                    <div className="flex gap-1.5 font-medium text-muted-foreground mb-1">
+                      <span className="text-foreground">Airtable sync</span>
+                      <span>&mdash;</span>
+                      <span>
+                        {collectionUsage.airtableConnections.length} connection
+                        {collectionUsage.airtableConnections.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <ul className="list-disc list-inside space-y-0.5 ml-1">
+                      {collectionUsage.airtableConnections.map((c) => (
+                        <li key={c.id}>{c.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p>
+              Are you sure you want to delete &quot;
+              {collections.find((c) => c.id === deleteCollectionId)?.name ?? 'this collection'}
+              &quot;? This action cannot be undone.
+            </p>
+          )}
+        </ConfirmDialog>
+        <ConfirmDialog
+          open={switchToManualDialogOpen}
+          onOpenChange={(open) => {
+            setSwitchToManualDialogOpen(open);
+            if (!open) setPendingDragEvent(null);
+          }}
+          title="Switch to manual order"
+          description="You cannot manually order CMS items when they are sorted by a specific field or a search filter is applied. Do you want to switch to manual sorting and remove any search filter?"
+          confirmLabel="Switch to manual order"
+          confirmVariant="default"
+          onConfirm={handleConfirmSwitchToManual}
+        />
+
+        {/* CSV Import Dialog */}
+        {selectedCollectionId && (
+          <CSVImportDialog
+            open={importDialogOpen}
+            onOpenChange={setImportDialogOpen}
+            collectionId={selectedCollectionId}
+            fields={collectionFields}
+            onImportComplete={() => {
+              loadItems(
+                selectedCollectionId,
+                currentPage,
+                pageSize,
+                currentSortBy,
+                currentSortOrder,
+              );
+            }}
+          />
+        )}
       </div>
     </div>
   );

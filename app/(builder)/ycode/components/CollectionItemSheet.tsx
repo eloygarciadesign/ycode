@@ -18,13 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetActions,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetActions } from '@/components/ui/sheet';
 import {
   Form,
   FormControl,
@@ -54,10 +48,25 @@ import { useLiveCollectionUpdates } from '@/hooks/use-live-collection-updates';
 import { useResourceLock } from '@/hooks/use-resource-lock';
 import { slugify, normalizeBooleanValue, parseMultiReferenceValue } from '@/lib/collection-utils';
 import { sanitizeSlug } from '@/lib/page-utils';
-import { isAssetFieldType, isMultipleAssetField, getFileManagerCategory, getAssetFieldLabel, getAssetFieldTypeLabel, isValidAssetForField, findStatusFieldId } from '@/lib/collection-field-utils';
+import {
+  isAssetFieldType,
+  isMultipleAssetField,
+  getFileManagerCategory,
+  getAssetFieldLabel,
+  getAssetFieldTypeLabel,
+  isValidAssetForField,
+  findStatusFieldId,
+  parseRepeaterValue,
+  getFieldIcon,
+  getFieldTypeLabel,
+} from '@/lib/collection-field-utils';
 import type { StatusAction } from '@/lib/collection-field-utils';
 import { CollectionStatusPill, parseStatusValue } from './CollectionStatusPill';
-import { formatDateInTimezone, localDatetimeToUTC, clampDateInputValue } from '@/lib/date-format-utils';
+import {
+  formatDateInTimezone,
+  localDatetimeToUTC,
+  clampDateInputValue,
+} from '@/lib/date-format-utils';
 import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { toast } from 'sonner';
@@ -68,11 +77,261 @@ import AssetFieldCard, { SortableAssetFieldCard } from './AssetFieldCard';
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import type { Asset, CollectionField, CollectionItemWithValues, CreateTranslationData } from '@/types';
+import type {
+  Asset,
+  CollectionField,
+  CollectionItemWithValues,
+  CreateTranslationData,
+  RepeaterSubField,
+} from '@/types';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getSyncedFieldIds, fetchCachedConnections } from '@/lib/apps/airtable/client';
+import { Textarea } from '@/components/ui/textarea';
+
+/**
+ * Sub-field input renderer for repeater rows.
+ * Renders the appropriate input control based on sub-field type.
+ */
+function SubFieldInput({
+  subField,
+  value,
+  onChange,
+  disabled,
+}: {
+  subField: RepeaterSubField;
+  value: string;
+  onChange: (value: string) => void;
+  disabled: boolean;
+}) {
+  const label = subField.name || getFieldTypeLabel(subField.type);
+
+  const renderInput = () => {
+    switch (subField.type) {
+      case 'text':
+        return (
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            autoComplete="off"
+          />
+        );
+      case 'rich_text':
+        return (
+          <Textarea
+            value={value} onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+          />
+        );
+      case 'number':
+        return (
+          <Input
+            type="number"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            autoComplete="off"
+          />
+        );
+      case 'boolean':
+        return (
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={`${subField.id}-boolean`}
+              checked={value === 'true'}
+              onCheckedChange={(checked) => onChange(checked ? 'true' : 'false')}
+              disabled={disabled}
+            />
+            <Label
+              htmlFor={`${subField.id}-boolean`}
+              className="text-xs text-muted-foreground font-normal cursor-pointer"
+            >
+              {value === 'true' ? 'YES' : 'NO'}
+            </Label>
+          </div>
+        );
+      case 'email':
+        return (
+          <Input
+            type="email"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            autoComplete="off"
+          />
+        );
+      case 'phone':
+        return (
+          <Input
+            type="tel"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            autoComplete="off"
+          />
+        );
+      case 'color':
+        return <ColorFieldInput value={value} onChange={onChange} />;
+      case 'date':
+        return (
+          <Input
+            type="datetime-local"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            autoComplete="off"
+          />
+        );
+      case 'date_only':
+        return (
+          <Input
+            type="date"
+            value={value?.slice(0, 10) || ''}
+            onChange={(e) => onChange(e.target.value || '')}
+            disabled={disabled}
+            autoComplete="off"
+          />
+        );
+      case 'image':
+        return (
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            placeholder="Asset ID"
+            autoComplete="off"
+          />
+        );
+      case 'link':
+        return (
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            placeholder="https://..."
+            autoComplete="off"
+          />
+        );
+      case 'option':
+        return (
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            placeholder="Option value"
+            autoComplete="off"
+          />
+        );
+      default:
+        return (
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            autoComplete="off"
+          />
+        );
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground flex items-center gap-1">
+        <Icon name={getFieldIcon(subField.type)} className="size-3 opacity-60" />
+        {label}
+      </Label>
+      {renderInput()}
+    </div>
+  );
+}
+
+/**
+ * Repeater rows editor for collection item sheet.
+ * Allows adding, editing, and removing rows of sub-field data.
+ */
+function RepeaterRowsEditor({
+  subFields,
+  value,
+  onChange,
+  disabled,
+}: {
+  subFields: RepeaterSubField[];
+  value: string;
+  onChange: (value: string) => void;
+  disabled: boolean;
+}) {
+  const rows = useMemo(() => parseRepeaterValue(value), [value]);
+
+  const handleRowChange = useCallback(
+    (rowIndex: number, subFieldId: string, cellValue: string) => {
+      const updated = [...rows];
+      updated[rowIndex] = { ...updated[rowIndex], [subFieldId]: cellValue };
+      onChange(JSON.stringify(updated));
+    },
+    [rows, onChange],
+  );
+
+  const handleRemoveRow = useCallback(
+    (rowIndex: number) => {
+      const updated = rows.filter((_, i) => i !== rowIndex);
+      onChange(JSON.stringify(updated));
+    },
+    [rows, onChange],
+  );
+
+  const handleAddRow = useCallback(() => {
+    const newRow: Record<string, string> = {};
+    subFields.forEach((sf) => {
+      newRow[sf.id] = '';
+    });
+    onChange(JSON.stringify([...rows, newRow]));
+  }, [rows, subFields, onChange]);
+
+  return (
+    <div className="space-y-3">
+      {rows.length === 0 && <p className="text-xs text-muted-foreground">No rows added yet.</p>}
+      {rows.map((row, rowIndex) => (
+        <div key={rowIndex} className="border border-border rounded-md p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Row {rowIndex + 1}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => handleRemoveRow(rowIndex)}
+              disabled={disabled}
+              className="h-6 w-6 p-0"
+              aria-label={`Remove row ${rowIndex + 1}`}
+            >
+              <Icon name="x" className="size-3" />
+            </Button>
+          </div>
+          {subFields.map((subField) => (
+            <SubFieldInput
+              key={subField.id}
+              subField={subField}
+              value={row[subField.id] ?? ''}
+              onChange={(val) => handleRowChange(rowIndex, subField.id, val)}
+              disabled={disabled}
+            />
+          ))}
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={handleAddRow}
+        disabled={disabled}
+      >
+        <Icon name="plus" className="size-3" />
+        Add row
+      </Button>
+    </div>
+  );
+}
 
 interface CollectionItemSheetProps {
   open: boolean;
@@ -89,13 +348,16 @@ export default function CollectionItemSheet({
   itemId,
   onSuccess,
 }: CollectionItemSheetProps) {
-  const { collections, fields, items, updateItem, createItem, setItemStatus } = useCollectionsStore();
-  const { updateItemInLayerData, invalidateLayerData, refetchLayersForCollection } = useCollectionLayerStore();
+  const { collections, fields, items, updateItem, createItem, setItemStatus } =
+    useCollectionsStore();
+  const { updateItemInLayerData, invalidateLayerData, refetchLayersForCollection } =
+    useCollectionLayerStore();
   const { updatePageCollectionItem, refetchPageCollectionItem, pages } = usePagesStore();
   const currentPageId = useEditorStore((state) => state.currentPageId);
   const openFileManager = useEditorStore((state) => state.openFileManager);
   const getAsset = useAssetsStore((state) => state.getAsset);
-  const timezone = useSettingsStore((state) => state.settingsByKey.timezone as string | null) ?? 'UTC';
+  const timezone =
+    useSettingsStore((state) => state.settingsByKey.timezone as string | null) ?? 'UTC';
 
   // Localization: when the user is browsing the canvas in a non-default
   // locale, this sheet edits CMS *translations* rather than the canonical
@@ -131,26 +393,23 @@ export default function CollectionItemSheet({
   const pendingStatusActionRef = useRef<StatusAction | null>(null);
 
   const dndSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  const collection = collections.find(c => c.id === collectionId);
+  const collection = collections.find((c) => c.id === collectionId);
   const collectionFields = useMemo(
-    () => (collectionId ? (fields[collectionId] || []) : []),
-    [collectionId, fields]
+    () => (collectionId ? fields[collectionId] || [] : []),
+    [collectionId, fields],
   );
   const collectionItems = useMemo(
-    () => (collectionId ? (items[collectionId] || []) : []),
-    [collectionId, items]
+    () => (collectionId ? items[collectionId] || [] : []),
+    [collectionId, items],
   );
-  const statusFieldId = useMemo(
-    () => findStatusFieldId(collectionFields),
-    [collectionFields]
-  );
+  const statusFieldId = useMemo(() => findStatusFieldId(collectionFields), [collectionFields]);
 
   // Fields managed by Airtable sync — disabled in the form
-  const [syncedFieldIds, setSyncedFieldIds] = useState<Set<string>>(
-    () => getSyncedFieldIds(collectionId)
+  const [syncedFieldIds, setSyncedFieldIds] = useState<Set<string>>(() =>
+    getSyncedFieldIds(collectionId),
   );
 
   useEffect(() => {
@@ -161,18 +420,19 @@ export default function CollectionItemSheet({
   }, [collectionId]);
 
   // Check if the current page is a dynamic page using this collection
-  const currentPage = currentPageId ? pages.find(p => p.id === currentPageId) : null;
-  const isPageLevelItem = currentPage?.is_dynamic && currentPage?.settings?.cms?.collection_id === collectionId;
+  const currentPage = currentPageId ? pages.find((p) => p.id === currentPageId) : null;
+  const isPageLevelItem =
+    currentPage?.is_dynamic && currentPage?.settings?.cms?.collection_id === collectionId;
 
   // Find name and slug fields for validation (only if editable in the form)
   const nameField = useMemo(
-    () => collectionFields.find(f => f.key === 'name' && f.fillable),
-    [collectionFields]
+    () => collectionFields.find((f) => f.key === 'name' && f.fillable),
+    [collectionFields],
   );
 
   const slugField = useMemo(
-    () => collectionFields.find(f => f.key === 'slug' && f.fillable),
-    [collectionFields]
+    () => collectionFields.find((f) => f.key === 'slug' && f.fillable),
+    [collectionFields],
   );
 
   // Validate slug uniqueness
@@ -181,11 +441,11 @@ export default function CollectionItemSheet({
       if (!value) return true; // Allow empty (other validation can handle required)
       // Check if slug exists in other items (exclude current item when editing)
       const existingItem = collectionItems.find(
-        item => item.values[fieldId] === value && item.id !== editingItem?.id
+        (item) => item.values[fieldId] === value && item.id !== editingItem?.id,
       );
       return !existingItem;
     },
-    [collectionItems, editingItem?.id]
+    [collectionItems, editingItem?.id],
   );
 
   const form = useForm();
@@ -199,7 +459,8 @@ export default function CollectionItemSheet({
 
   // Compute status for the current item from the status field value
   const isNewItem = !editingItem || isTempId(editingItem.id);
-  const statusValue = (editingItem && statusFieldId) ? parseStatusValue(editingItem.values[statusFieldId]) : null;
+  const statusValue =
+    editingItem && statusFieldId ? parseStatusValue(editingItem.values[statusFieldId]) : null;
   const isPublishable = statusValue?.is_publishable ?? editingItem?.is_publishable ?? true;
   const hasPublishedVersion = statusValue?.is_published ?? false;
 
@@ -209,7 +470,7 @@ export default function CollectionItemSheet({
     if (!open) return;
 
     if (itemId && collectionItems.length > 0) {
-      const item = collectionItems.find(i => i.id === itemId);
+      const item = collectionItems.find((i) => i.id === itemId);
       // If itemId is a temp ID, also try to find by matching the temp pattern
       // (the item might have been replaced with the real ID)
       if (!item && isTempId(itemId)) {
@@ -269,15 +530,16 @@ export default function CollectionItemSheet({
   // snapshot translations once on mount/locale switch so a background refresh
   // doesn't clobber the user's in-flight edits.
   useEffect(() => {
-    const editableFields = collectionFields.filter(f => f.fillable);
+    const editableFields = collectionFields.filter((f) => f.fillable);
 
     if (editingItem) {
-      const localeTranslations = isLocalizing && selectedLocaleId
-        ? useLocalisationStore.getState().translations[selectedLocaleId]
-        : undefined;
+      const localeTranslations =
+        isLocalizing && selectedLocaleId
+          ? useLocalisationStore.getState().translations[selectedLocaleId]
+          : undefined;
 
       const values: Record<string, any> = {};
-      editableFields.forEach(field => {
+      editableFields.forEach((field) => {
         let value: any;
         if (isLocalizing && localeTranslations && isTranslatableField(field)) {
           const tKey = `cms:${editingItem.id}:${buildCmsContentKey(field)}`;
@@ -307,7 +569,7 @@ export default function CollectionItemSheet({
       form.reset(values);
     } else {
       const defaultValues: Record<string, any> = {};
-      editableFields.forEach(field => {
+      editableFields.forEach((field) => {
         let value = field.default || '';
         if (field.type === 'boolean') {
           value = normalizeBooleanValue(value);
@@ -316,22 +578,33 @@ export default function CollectionItemSheet({
       });
       form.reset(defaultValues);
     }
-  }, [editingItem, collectionFields, form, isLocalizing, selectedLocaleId, isTranslatableField, buildCmsContentKey]);
+  }, [
+    editingItem,
+    collectionFields,
+    form,
+    isLocalizing,
+    selectedLocaleId,
+    isTranslatableField,
+    buildCmsContentKey,
+  ]);
 
   // Handle auto-focus on sheet open
-  const handleOpenAutoFocus = useCallback((e: Event) => {
-    // Only focus name field when creating a new item
-    if (!itemId && nameInputRef.current) {
-      e.preventDefault(); // Prevent default focus behavior
-      nameInputRef.current.focus();
-    }
-  }, [itemId]);
+  const handleOpenAutoFocus = useCallback(
+    (e: Event) => {
+      // Only focus name field when creating a new item
+      if (!itemId && nameInputRef.current) {
+        e.preventDefault(); // Prevent default focus behavior
+        nameInputRef.current.focus();
+      }
+    },
+    [itemId],
+  );
 
   // Auto-fill slug field based on name field (debounced to avoid race conditions)
   useEffect(() => {
     if (!editingItem) {
-      const nameField = collectionFields.find(f => f.key === 'name');
-      const localSlugField = collectionFields.find(f => f.key === 'slug');
+      const nameField = collectionFields.find((f) => f.key === 'name');
+      const localSlugField = collectionFields.find((f) => f.key === 'slug');
 
       if (nameField && localSlugField) {
         let timeoutId: NodeJS.Timeout | null = null;
@@ -414,7 +687,9 @@ export default function CollectionItemSheet({
       }
 
       if (existing) {
-        promises.push(updateTranslation(existing, { content_value: serialized, is_completed: true }));
+        promises.push(
+          updateTranslation(existing, { content_value: serialized, is_completed: true }),
+        );
       } else {
         const data: CreateTranslationData = {
           locale_id: selectedLocaleId,
@@ -466,7 +741,7 @@ export default function CollectionItemSheet({
     }
 
     // Normalize boolean values to strings before submitting
-    collectionFields.forEach(field => {
+    collectionFields.forEach((field) => {
       if (field.type === 'boolean' && field.id in values) {
         values[field.id] = normalizeBooleanValue(values[field.id]);
       }
@@ -601,17 +876,20 @@ export default function CollectionItemSheet({
   };
 
   // Handle sheet close - check for unsaved changes
-  const handleOpenChange = useCallback((isOpen: boolean) => {
-    if (!isOpen && isDirty) {
-      // Show unsaved changes dialog instead of closing
-      setShowUnsavedDialog(true);
-      return;
-    }
-    if (!isOpen) {
-      form.clearErrors();
-    }
-    onOpenChange(isOpen);
-  }, [onOpenChange, form, isDirty]);
+  const handleOpenChange = useCallback(
+    (isOpen: boolean) => {
+      if (!isOpen && isDirty) {
+        // Show unsaved changes dialog instead of closing
+        setShowUnsavedDialog(true);
+        return;
+      }
+      if (!isOpen) {
+        form.clearErrors();
+      }
+      onOpenChange(isOpen);
+    },
+    [onOpenChange, form, isDirty],
+  );
 
   // Discard unsaved changes and close sheet
   const handleConfirmDiscard = useCallback(() => {
@@ -692,7 +970,9 @@ export default function CollectionItemSheet({
                 {isLocalizing
                   ? 'Save translation'
                   : editingItem
-                    ? (isTempId(editingItem.id) ? 'Saving...' : 'Save')
+                    ? isTempId(editingItem.id)
+                      ? 'Saving...'
+                      : 'Save'
                     : 'Create'}
               </Button>
               {!isLocalizing && (
@@ -750,7 +1030,7 @@ export default function CollectionItemSheet({
           >
             <div className="flex-1 flex flex-col gap-6">
               {collectionFields
-                .filter(f => f.fillable)
+                .filter((f) => f.fillable)
                 .map((field) => {
                   const isSynced = syncedFieldIds.has(field.id);
                   // While translating, lock everything that isn't a
@@ -761,381 +1041,457 @@ export default function CollectionItemSheet({
                   const isFieldDisabled = isSynced || isLockedForLocale;
 
                   return (
-                  <FormField
-                    key={field.id}
-                    control={form.control}
-                    name={field.id}
-                    render={({ field: formField }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-2">
-                          <FormLabel>{field.name}</FormLabel>
-                          {(field.type === 'multi_reference') && (() => {
-                            const ids = parseMultiReferenceValue(formField.value);
-                            return ids.length > 0 ? (
+                    <FormField
+                      key={field.id}
+                      control={form.control}
+                      name={field.id}
+                      render={({ field: formField }) => (
+                        <FormItem>
+                          <div className="flex items-center gap-2">
+                            <FormLabel>{field.name}</FormLabel>
+                            {field.type === 'multi_reference' &&
+                              (() => {
+                                const ids = parseMultiReferenceValue(formField.value);
+                                return ids.length > 0 ? (
+                                  <span className="text-[10px] text-muted-foreground leading-none">
+                                    {ids.length} item{ids.length !== 1 ? 's' : ''} selected
+                                  </span>
+                                ) : null;
+                              })()}
+                            {isSynced && (
                               <span className="text-[10px] text-muted-foreground leading-none">
-                                {ids.length} item{ids.length !== 1 ? 's' : ''} selected
+                                Synced from Airtable
                               </span>
-                            ) : null;
-                          })()}
-                          {isSynced && (
-                            <span className="text-[10px] text-muted-foreground leading-none">
-                              Synced from Airtable
-                            </span>
-                          )}
-                          {isLockedForLocale && (
-                            <span className="text-[10px] text-muted-foreground leading-none">
-                              Not translatable
-                            </span>
-                          )}
-                        </div>
-                        <FormControl>
-                          <div className={cn('min-w-0', isFieldDisabled && 'opacity-50 pointer-events-none')}>
-                          {field.type === 'rich_text' ? (
-                            <div>
-                              <RichTextEditor
-                                value={formField.value || ''}
-                                onChange={formField.onChange}
-                                placeholder={field.default || `Enter ${field.name.toLowerCase()}...`}
-                                variant="full"
-                                withFormatting={true}
-                                excludedLinkTypes={['asset', 'field']}
-                                hidePageContextOptions={true}
-                                onExpandClick={() => setExpandedRichTextField(field.id)}
-                              />
-                              <RichTextEditorSheet
-                                open={expandedRichTextField === field.id}
-                                onOpenChange={(open) => { if (!open) setExpandedRichTextField(null); }}
-                                description={`CMS item "${field.name}" field`}
-                                value={formField.value || ''}
-                                onChange={formField.onChange}
-                                placeholder={field.default || `Enter ${field.name.toLowerCase()}...`}
-                                hidePageContextOptions={true}
-                              />
-                            </div>
-                          ) : field.type === 'reference' && field.reference_collection_id ? (
-                            <ReferenceFieldCombobox
-                              collectionId={field.reference_collection_id}
-                              value={formField.value || ''}
-                              onChange={formField.onChange}
-                              isMulti={false}
-                              placeholder={`Select ${field.name.toLowerCase()}...`}
-                            />
-                          ) : field.type === 'multi_reference' && field.reference_collection_id ? (
-                            <ReferenceFieldCombobox
-                              collectionId={field.reference_collection_id}
-                              value={formField.value || '[]'}
-                              onChange={formField.onChange}
-                              isMulti={true}
-                              placeholder={`Select ${field.name.toLowerCase()}...`}
-                            />
-                          ) : field.type === 'link' ? (
-                            <CollectionLinkFieldInput
-                              value={formField.value || ''}
-                              onChange={formField.onChange}
-                            />
-                          ) : field.type === 'email' ? (
-                            <Input
-                              type="email"
-                              placeholder={field.default || `Enter ${field.name.toLowerCase()}...`}
-                              autoComplete="off"
-                              {...formField}
-                            />
-                          ) : field.type === 'phone' ? (
-                            <Input
-                              type="tel"
-                              placeholder={field.default || `Enter ${field.name.toLowerCase()}...`}
-                              autoComplete="off"
-                              {...formField}
-                            />
-                          ) : field.type === 'date' ? (
-                            <Input
-                              type="datetime-local"
-                              autoComplete="off"
-                              value={formatDateInTimezone(formField.value, timezone, 'datetime-local')}
-                              onChange={(e) => {
-                                const clamped = clampDateInputValue(e.target.value);
-                                const utcValue = localDatetimeToUTC(clamped, timezone);
-                                formField.onChange(utcValue);
-                              }}
-                            />
-                          ) : field.type === 'date_only' ? (
-                            <Input
-                              type="date"
-                              autoComplete="off"
-                              value={formField.value?.slice(0, 10) || ''}
-                              onChange={(e) => {
-                                formField.onChange(clampDateInputValue(e.target.value) || '');
-                              }}
-                            />
-                          ) : field.type === 'color' ? (
-                            <ColorFieldInput
-                              value={formField.value || ''}
-                              onChange={formField.onChange}
-                            />
-                          ) : isMultipleAssetField(field) ? (
-                            /* Multiple Asset Field */
-                            (() => {
-                              // Handle both array (from castValue) and JSON string formats
-                              let assetIds: string[] = [];
-                              const rawValue = formField.value;
-                              if (Array.isArray(rawValue)) {
-                                assetIds = rawValue;
-                              } else if (typeof rawValue === 'string' && rawValue) {
-                                try {
-                                  const parsed = JSON.parse(rawValue);
-                                  assetIds = Array.isArray(parsed) ? parsed : [];
-                                } catch {
-                                  assetIds = [];
-                                }
-                              }
-
-                              const fieldTypeLabel = getAssetFieldTypeLabel(field.type);
-                              const addButtonLabel = getAssetFieldLabel(field.type);
-
-                              const showInvalidTypeError = () => {
-                                const article = fieldTypeLabel === 'audio' ? 'an' : 'a';
-                                toast.error('Invalid asset type', {
-                                  description: `Please select ${article} ${fieldTypeLabel} file.`,
-                                });
-                              };
-
-                              const handleAddAsset = () => {
-                                openFileManager(
-                                  (asset) => {
-                                    if (!isValidAssetForField(asset, field.type)) {
-                                      showInvalidTypeError();
-                                      return false;
+                            )}
+                            {isLockedForLocale && (
+                              <span className="text-[10px] text-muted-foreground leading-none">
+                                Not translatable
+                              </span>
+                            )}
+                          </div>
+                          <FormControl>
+                            <div
+                              className={cn(
+                                'min-w-0',
+                                isFieldDisabled && 'opacity-50 pointer-events-none',
+                              )}
+                            >
+                              {field.type === 'rich_text' ? (
+                                <div>
+                                  <RichTextEditor
+                                    value={formField.value || ''}
+                                    onChange={formField.onChange}
+                                    placeholder={
+                                      field.default || `Enter ${field.name.toLowerCase()}...`
                                     }
-                                    if (!assetIds.includes(asset.id)) {
-                                      formField.onChange(JSON.stringify([...assetIds, asset.id]));
+                                    variant="full"
+                                    withFormatting={true}
+                                    excludedLinkTypes={['asset', 'field']}
+                                    hidePageContextOptions={true}
+                                    onExpandClick={() => setExpandedRichTextField(field.id)}
+                                  />
+                                  <RichTextEditorSheet
+                                    open={expandedRichTextField === field.id}
+                                    onOpenChange={(open) => {
+                                      if (!open) setExpandedRichTextField(null);
+                                    }}
+                                    description={`CMS item "${field.name}" field`}
+                                    value={formField.value || ''}
+                                    onChange={formField.onChange}
+                                    placeholder={
+                                      field.default || `Enter ${field.name.toLowerCase()}...`
                                     }
-                                  },
-                                  undefined,
-                                  getFileManagerCategory(field.type)
-                                );
-                              };
-
-                              const handleReplaceAsset = (oldAssetId: string) => {
-                                openFileManager(
-                                  (asset) => {
-                                    if (!isValidAssetForField(asset, field.type)) {
-                                      showInvalidTypeError();
-                                      return false;
-                                    }
-                                    formField.onChange(JSON.stringify(assetIds.map(id => id === oldAssetId ? asset.id : id)));
-                                  },
-                                  oldAssetId,
-                                  getFileManagerCategory(field.type)
-                                );
-                              };
-
-                              const handleRemoveAsset = (assetId: string) => {
-                                formField.onChange(JSON.stringify(assetIds.filter(id => id !== assetId)));
-                              };
-
-                              const handleAssetDragEnd = (event: DragEndEvent) => {
-                                const { active, over } = event;
-                                if (!over || active.id === over.id) return;
-                                const oldIndex = assetIds.indexOf(String(active.id));
-                                const newIndex = assetIds.indexOf(String(over.id));
-                                if (oldIndex === -1 || newIndex === -1) return;
-                                formField.onChange(JSON.stringify(arrayMove(assetIds, oldIndex, newIndex)));
-                              };
-
-                              return (
-                                <div className="space-y-2">
-                                  {assetIds.length > 1 ? (
-                                    <DndContext
-                                      sensors={dndSensors}
-                                      collisionDetection={closestCenter}
-                                      onDragEnd={handleAssetDragEnd}
-                                    >
-                                      <SortableContext
-                                        items={assetIds}
-                                        strategy={rectSortingStrategy}
-                                      >
-                                        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))]">
-                                          {assetIds.map((assetId) => (
-                                            <SortableAssetFieldCard
-                                              key={assetId}
-                                              id={assetId}
-                                              asset={getAsset(assetId)}
-                                              fieldType={field.type}
-                                              onChangeFile={() => handleReplaceAsset(assetId)}
-                                              onRemove={() => handleRemoveAsset(assetId)}
-                                            />
-                                          ))}
-                                        </div>
-                                      </SortableContext>
-                                    </DndContext>
-                                  ) : assetIds.length === 1 ? (
-                                    <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))]">
-                                      <AssetFieldCard
-                                        asset={getAsset(assetIds[0])}
-                                        fieldType={field.type}
-                                        onChangeFile={() => handleReplaceAsset(assetIds[0])}
-                                        onRemove={() => handleRemoveAsset(assetIds[0])}
-                                      />
-                                    </div>
-                                  ) : null}
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={(e) => { e.stopPropagation(); handleAddAsset(); }}
-                                  >
-                                    <Icon name="plus" className="size-3" />
-                                    Add {addButtonLabel}
-                                  </Button>
+                                    hidePageContextOptions={true}
+                                  />
                                 </div>
-                              );
-                            })()
-                          ) : isAssetFieldType(field.type) ? (
-                            /* Single Asset Field */
-                            (() => {
-                              const currentAssetId = formField.value || null;
-                              const currentAsset = currentAssetId ? getAsset(currentAssetId) : null;
-                              const fieldTypeLabel = getAssetFieldTypeLabel(field.type);
-                              const addButtonLabel = getAssetFieldLabel(field.type);
+                              ) : field.type === 'reference' && field.reference_collection_id ? (
+                                <ReferenceFieldCombobox
+                                  collectionId={field.reference_collection_id}
+                                  value={formField.value || ''}
+                                  onChange={formField.onChange}
+                                  isMulti={false}
+                                  placeholder={`Select ${field.name.toLowerCase()}...`}
+                                />
+                              ) : field.type === 'multi_reference' &&
+                                field.reference_collection_id ? (
+                                <ReferenceFieldCombobox
+                                  collectionId={field.reference_collection_id}
+                                  value={formField.value || '[]'}
+                                  onChange={formField.onChange}
+                                  isMulti={true}
+                                  placeholder={`Select ${field.name.toLowerCase()}...`}
+                                />
+                                ) : field.type === 'link' ? (
+                                <CollectionLinkFieldInput
+                                  value={formField.value || ''}
+                                  onChange={formField.onChange}
+                                />
+                                ) : field.type === 'email' ? (
+                                <Input
+                                  type="email"
+                                  placeholder={
+                                    field.default || `Enter ${field.name.toLowerCase()}...`
+                                  }
+                                  autoComplete="off"
+                                  {...formField}
+                                />
+                                ) : field.type === 'phone' ? (
+                                <Input
+                                  type="tel"
+                                  placeholder={
+                                    field.default || `Enter ${field.name.toLowerCase()}...`
+                                  }
+                                  autoComplete="off"
+                                  {...formField}
+                                />
+                                ) : field.type === 'date' ? (
+                                <Input
+                                  type="datetime-local"
+                                  autoComplete="off"
+                                  value={formatDateInTimezone(
+                                    formField.value,
+                                    timezone,
+                                    'datetime-local',
+                                  )}
+                                  onChange={(e) => {
+                                    const clamped = clampDateInputValue(e.target.value);
+                                    const utcValue = localDatetimeToUTC(clamped, timezone);
+                                    formField.onChange(utcValue);
+                                  }}
+                                />
+                                ) : field.type === 'date_only' ? (
+                                <Input
+                                  type="date"
+                                  autoComplete="off"
+                                  value={formField.value?.slice(0, 10) || ''}
+                                  onChange={(e) => {
+                                    formField.onChange(clampDateInputValue(e.target.value) || '');
+                                  }}
+                                />
+                                ) : field.type === 'color' ? (
+                                <ColorFieldInput
+                                  value={formField.value || ''}
+                                  onChange={formField.onChange}
+                                />
+                                ) : isMultipleAssetField(field) ? (
+                                /* Multiple Asset Field */
+                                  (() => {
+                                  // Handle both array (from castValue) and JSON string formats
+                                    let assetIds: string[] = [];
+                                    const rawValue = formField.value;
+                                    if (Array.isArray(rawValue)) {
+                                      assetIds = rawValue;
+                                    } else if (typeof rawValue === 'string' && rawValue) {
+                                      try {
+                                        const parsed = JSON.parse(rawValue);
+                                        assetIds = Array.isArray(parsed) ? parsed : [];
+                                      } catch {
+                                        assetIds = [];
+                                      }
+                                    }
 
-                              const handleOpenFileManager = () => {
-                                openFileManager(
-                                  (asset) => {
-                                    if (!isValidAssetForField(asset, field.type)) {
+                                    const fieldTypeLabel = getAssetFieldTypeLabel(field.type);
+                                    const addButtonLabel = getAssetFieldLabel(field.type);
+
+                                    const showInvalidTypeError = () => {
                                       const article = fieldTypeLabel === 'audio' ? 'an' : 'a';
                                       toast.error('Invalid asset type', {
                                         description: `Please select ${article} ${fieldTypeLabel} file.`,
                                       });
-                                      return false;
+                                    };
+
+                                    const handleAddAsset = () => {
+                                      openFileManager(
+                                        (asset) => {
+                                          if (!isValidAssetForField(asset, field.type)) {
+                                            showInvalidTypeError();
+                                            return false;
+                                          }
+                                          if (!assetIds.includes(asset.id)) {
+                                            formField.onChange(
+                                              JSON.stringify([...assetIds, asset.id]),
+                                            );
+                                          }
+                                        },
+                                        undefined,
+                                        getFileManagerCategory(field.type),
+                                      );
+                                    };
+
+                                    const handleReplaceAsset = (oldAssetId: string) => {
+                                      openFileManager(
+                                        (asset) => {
+                                          if (!isValidAssetForField(asset, field.type)) {
+                                            showInvalidTypeError();
+                                            return false;
+                                          }
+                                          formField.onChange(
+                                            JSON.stringify(
+                                              assetIds.map((id) =>
+                                                id === oldAssetId ? asset.id : id,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        oldAssetId,
+                                        getFileManagerCategory(field.type),
+                                      );
+                                    };
+
+                                    const handleRemoveAsset = (assetId: string) => {
+                                      formField.onChange(
+                                        JSON.stringify(assetIds.filter((id) => id !== assetId)),
+                                      );
+                                    };
+
+                                    const handleAssetDragEnd = (event: DragEndEvent) => {
+                                      const { active, over } = event;
+                                      if (!over || active.id === over.id) return;
+                                      const oldIndex = assetIds.indexOf(String(active.id));
+                                      const newIndex = assetIds.indexOf(String(over.id));
+                                      if (oldIndex === -1 || newIndex === -1) return;
+                                      formField.onChange(
+                                        JSON.stringify(arrayMove(assetIds, oldIndex, newIndex)),
+                                      );
+                                    };
+
+                                    return (
+                                    <div className="space-y-2">
+                                      {assetIds.length > 1 ? (
+                                        <DndContext
+                                          sensors={dndSensors}
+                                          collisionDetection={closestCenter}
+                                          onDragEnd={handleAssetDragEnd}
+                                        >
+                                          <SortableContext
+                                            items={assetIds}
+                                            strategy={rectSortingStrategy}
+                                          >
+                                            <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))]">
+                                              {assetIds.map((assetId) => (
+                                                <SortableAssetFieldCard
+                                                  key={assetId}
+                                                  id={assetId}
+                                                  asset={getAsset(assetId)}
+                                                  fieldType={field.type}
+                                                  onChangeFile={() => handleReplaceAsset(assetId)}
+                                                  onRemove={() => handleRemoveAsset(assetId)}
+                                                />
+                                              ))}
+                                            </div>
+                                          </SortableContext>
+                                        </DndContext>
+                                      ) : assetIds.length === 1 ? (
+                                        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))]">
+                                          <AssetFieldCard
+                                            asset={getAsset(assetIds[0])}
+                                            fieldType={field.type}
+                                            onChangeFile={() => handleReplaceAsset(assetIds[0])}
+                                            onRemove={() => handleRemoveAsset(assetIds[0])}
+                                          />
+                                        </div>
+                                      ) : null}
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleAddAsset();
+                                        }}
+                                      >
+                                        <Icon name="plus" className="size-3" />
+                                        Add {addButtonLabel}
+                                      </Button>
+                                    </div>
+                                    );
+                                  })()
+                                ) : isAssetFieldType(field.type) ? (
+                                /* Single Asset Field */
+                                  (() => {
+                                    const currentAssetId = formField.value || null;
+                                    const currentAsset = currentAssetId
+                                      ? getAsset(currentAssetId)
+                                      : null;
+                                    const fieldTypeLabel = getAssetFieldTypeLabel(field.type);
+                                    const addButtonLabel = getAssetFieldLabel(field.type);
+
+                                    const handleOpenFileManager = () => {
+                                      openFileManager(
+                                        (asset) => {
+                                          if (!isValidAssetForField(asset, field.type)) {
+                                            const article = fieldTypeLabel === 'audio' ? 'an' : 'a';
+                                            toast.error('Invalid asset type', {
+                                              description: `Please select ${article} ${fieldTypeLabel} file.`,
+                                            });
+                                            return false;
+                                          }
+                                          formField.onChange(asset.id);
+                                        },
+                                        currentAssetId,
+                                        getFileManagerCategory(field.type),
+                                      );
+                                    };
+
+                                    if (!currentAsset) {
+                                      return (
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        className="w-fit"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOpenFileManager();
+                                        }}
+                                      >
+                                        <Icon name="plus" className="size-3" />
+                                        Add {addButtonLabel}
+                                      </Button>
+                                      );
                                     }
-                                    formField.onChange(asset.id);
-                                  },
-                                  currentAssetId,
-                                  getFileManagerCategory(field.type)
-                                );
-                              };
 
-                              if (!currentAsset) {
-                                return (
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    size="sm"
-                                    className="w-fit"
-                                    onClick={(e) => { e.stopPropagation(); handleOpenFileManager(); }}
-                                  >
-                                    <Icon name="plus" className="size-3" />
-                                    Add {addButtonLabel}
-                                  </Button>
-                                );
-                              }
-
-                              return (
-                                <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))]">
-                                  <AssetFieldCard
-                                    asset={currentAsset}
-                                    fieldType={field.type}
-                                    onChangeFile={handleOpenFileManager}
-                                    onRemove={() => formField.onChange('')}
+                                    return (
+                                    <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))]">
+                                      <AssetFieldCard
+                                        asset={currentAsset}
+                                        fieldType={field.type}
+                                        onChangeFile={handleOpenFileManager}
+                                        onRemove={() => formField.onChange('')}
+                                      />
+                                    </div>
+                                    );
+                                  })()
+                                ) : field.type === 'boolean' ? (
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`${field.id}-boolean`}
+                                    checked={formField.value === 'true'}
+                                    onCheckedChange={(checked) =>
+                                      formField.onChange(checked ? 'true' : 'false')
+                                    }
                                   />
+                                  <Label
+                                    htmlFor={`${field.id}-boolean`}
+                                    className="text-xs text-muted-foreground font-normal cursor-pointer gap-1"
+                                  >
+                                    Value is set to{' '}
+                                    <span className="text-foreground">
+                                      {formField.value === 'true' ? 'YES' : 'NO'}
+                                    </span>
+                                  </Label>
                                 </div>
-                              );
-                            })()
-                          ) : field.type === 'boolean' ? (
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                id={`${field.id}-boolean`}
-                                checked={formField.value === 'true'}
-                                onCheckedChange={(checked) => formField.onChange(checked ? 'true' : 'false')}
-                              />
-                              <Label
-                                htmlFor={`${field.id}-boolean`}
-                                className="text-xs text-muted-foreground font-normal cursor-pointer gap-1"
-                              >
-                                Value is set to <span className="text-foreground">{formField.value === 'true' ? 'YES' : 'NO'}</span>
-                              </Label>
-                            </div>
-                          ) : field.type === 'option' ? (
-                            (() => {
-                              const options = field.data?.options ?? [];
-                              const currentValue = formField.value || '';
-                              const hasMatchingOption = options.some(o => o.name.trim() === currentValue);
-                              return (
-                                <Select
-                                  value={currentValue || '__none__'}
-                                  onValueChange={(value) => {
-                                    // Radix Select renders a hidden native <select> for form
-                                    // integration that dispatches a spurious change event with
-                                    // an empty value when the controlled `value` prop changes
-                                    // externally (e.g. via form.reset) before the SelectItem
-                                    // for that value has registered (the items live in a
-                                    // Portal that mounts only when the select is open).
-                                    // Ignore that spurious empty change so it can't clobber
-                                    // the loaded form value. SelectItem disallows value="",
-                                    // so an empty string is never user-initiated.
-                                    if (value === '') return;
-                                    formField.onChange(value === '__none__' ? '' : value);
+                                ) : field.type === 'option' ? (
+                                  (() => {
+                                    const options = field.data?.options ?? [];
+                                    const currentValue = formField.value || '';
+                                    const hasMatchingOption = options.some(
+                                      (o) => o.name.trim() === currentValue,
+                                    );
+                                    return (
+                                    <Select
+                                      value={currentValue || '__none__'}
+                                      onValueChange={(value) => {
+                                        // Radix Select renders a hidden native <select> for form
+                                        // integration that dispatches a spurious change event with
+                                        // an empty value when the controlled `value` prop changes
+                                        // externally (e.g. via form.reset) before the SelectItem
+                                        // for that value has registered (the items live in a
+                                        // Portal that mounts only when the select is open).
+                                        // Ignore that spurious empty change so it can't clobber
+                                        // the loaded form value. SelectItem disallows value="",
+                                        // so an empty string is never user-initiated.
+                                        if (value === '') return;
+                                        formField.onChange(value === '__none__' ? '' : value);
+                                      }}
+                                      disabled={options.length === 0}
+                                    >
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue
+                                          placeholder={
+                                            options.length === 0
+                                              ? 'No options available'
+                                              : `Select ${field.name.toLowerCase()}...`
+                                          }
+                                        />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectGroup>
+                                          <SelectItem value="__none__">None</SelectItem>
+                                          {options
+                                            .filter((o) => o.name.trim().length > 0)
+                                            .map((option) => (
+                                              <SelectItem
+                                                key={option.id}
+                                                value={option.name.trim()}
+                                              >
+                                                {option.name.trim()}
+                                              </SelectItem>
+                                            ))}
+                                          {currentValue && !hasMatchingOption && (
+                                            <SelectItem value={currentValue} disabled>
+                                              {currentValue} (deleted)
+                                            </SelectItem>
+                                          )}
+                                        </SelectGroup>
+                                      </SelectContent>
+                                    </Select>
+                                    );
+                                  })()
+                                ) : field.type === 'repeater' ? (
+                                <RepeaterRowsEditor
+                                  subFields={
+                                    Array.isArray(field.data?.sub_fields)
+                                      ? field.data.sub_fields
+                                      : []
+                                  }
+                                  value={formField.value || '[]'}
+                                  onChange={formField.onChange}
+                                  disabled={isFieldDisabled}
+                                />
+                                ) : field.key === 'name' ? (
+                                <Input
+                                  ref={nameInputRef}
+                                  placeholder={
+                                    field.default || `Enter ${field.name.toLowerCase()}...`
+                                  }
+                                  autoComplete="off"
+                                  name={formField.name}
+                                  value={formField.value}
+                                  onChange={formField.onChange}
+                                  onBlur={formField.onBlur}
+                                />
+                                ) : field.key === 'slug' ? (
+                                <Input
+                                  placeholder={
+                                    field.default || `Enter ${field.name.toLowerCase()}...`
+                                  }
+                                  autoComplete="off"
+                                  name={formField.name}
+                                  value={formField.value}
+                                  onChange={(e) =>
+                                    formField.onChange(sanitizeSlug(e.target.value, true))
+                                  }
+                                  onBlur={(e) => {
+                                    formField.onChange(sanitizeSlug(e.target.value, false));
+                                    formField.onBlur();
                                   }}
-                                  disabled={options.length === 0}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder={options.length === 0 ? 'No options available' : `Select ${field.name.toLowerCase()}...`} />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectGroup>
-                                      <SelectItem value="__none__">None</SelectItem>
-                                      {options
-                                        .filter(o => o.name.trim().length > 0)
-                                        .map((option) => (
-                                          <SelectItem key={option.id} value={option.name.trim()}>
-                                            {option.name.trim()}
-                                          </SelectItem>
-                                        ))}
-                                      {currentValue && !hasMatchingOption && (
-                                        <SelectItem value={currentValue} disabled>
-                                          {currentValue} (deleted)
-                                        </SelectItem>
-                                      )}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
-                              );
-                            })()
-                          ) : field.key === 'name' ? (
-                            <Input
-                              ref={nameInputRef}
-                              placeholder={field.default || `Enter ${field.name.toLowerCase()}...`}
-                              autoComplete="off"
-                              name={formField.name}
-                              value={formField.value}
-                              onChange={formField.onChange}
-                              onBlur={formField.onBlur}
-                            />
-                          ) : field.key === 'slug' ? (
-                            <Input
-                              placeholder={field.default || `Enter ${field.name.toLowerCase()}...`}
-                              autoComplete="off"
-                              name={formField.name}
-                              value={formField.value}
-                              onChange={(e) => formField.onChange(sanitizeSlug(e.target.value, true))}
-                              onBlur={(e) => {
-                                formField.onChange(sanitizeSlug(e.target.value, false));
-                                formField.onBlur();
-                              }}
-                            />
-                          ) : (
-                            <Input
-                              placeholder={field.default || `Enter ${field.name.toLowerCase()}...`}
-                              autoComplete="off"
-                              {...formField}
-                            />
-                          )}
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                                />
+                                ) : (
+                                <Input
+                                  placeholder={
+                                    field.default || `Enter ${field.name.toLowerCase()}...`
+                                  }
+                                  autoComplete="off"
+                                  {...formField}
+                                />
+                                )}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   );
                 })}
             </div>

@@ -14,8 +14,12 @@ import { sanitizeSlug } from './page-utils';
  */
 export function normalizeBooleanValue(value: any): string {
   const numVal = Number(value);
-  return (value === 'true' || value === 'yes' || value === '1' || numVal === 1 || (typeof value === 'boolean' && value)) 
-    ? 'true' 
+  return value === 'true' ||
+    value === 'yes' ||
+    value === '1' ||
+    numVal === 1 ||
+    (typeof value === 'boolean' && value)
+    ? 'true'
     : 'false';
 }
 
@@ -56,7 +60,10 @@ export function parseMultiReferenceValue(value: unknown): string[] {
  * @returns Sorted array of collections
  */
 /** Extract sortBy/sortOrder API params from a collection's sorting config. */
-export function getSortParams(sorting: CollectionSorting | null | undefined): { sortBy?: string; sortOrder?: string } {
+export function getSortParams(sorting: CollectionSorting | null | undefined): {
+  sortBy?: string;
+  sortOrder?: string;
+} {
   if (!sorting || sorting.direction === 'manual') {
     return { sortBy: 'manual', sortOrder: undefined };
   }
@@ -123,6 +130,10 @@ export function castValue(value: string | null, type: CollectionFieldType): any 
       // Standard hex color string (e.g. #ff0000 or #ff0000aa with alpha)
       return value;
 
+    case 'repeater':
+      // Keep as raw JSON string — parsed downstream by parseRepeaterValue
+      return value;
+
     case 'email':
     case 'phone':
     case 'text':
@@ -157,7 +168,7 @@ export function valueToString(value: any, type: CollectionFieldType): string | n
     case 'boolean':
       // Handle both boolean and string values
       if (typeof value === 'string') {
-        return (value === 'true' || value === '1' || value === 'yes') ? 'true' : 'false';
+        return value === 'true' || value === '1' || value === 'yes' ? 'true' : 'false';
       }
       return value ? 'true' : 'false';
 
@@ -184,6 +195,9 @@ export function valueToString(value: any, type: CollectionFieldType): string | n
 
     case 'color':
       // Standard hex color (e.g. #ff0000 or #ff0000aa)
+      return String(value);
+
+    case 'repeater':
       return String(value);
 
     case 'email':
@@ -244,10 +258,10 @@ export interface InverseReferenceField {
 export function getInverseReferenceFields(
   targetCollectionId: string,
   allFields: Record<string, import('@/types').CollectionField[]>,
-  allCollections: import('@/types').Collection[]
+  allCollections: import('@/types').Collection[],
 ): InverseReferenceField[] {
   const result: InverseReferenceField[] = [];
-  const collectionsMap = new Map(allCollections.map(c => [c.id, c]));
+  const collectionsMap = new Map(allCollections.map((c) => [c.id, c]));
 
   for (const [collectionId, fields] of Object.entries(allFields)) {
     if (collectionId === targetCollectionId) continue;
@@ -282,14 +296,16 @@ export function resolveReferenceFieldsSync(
   allItems: Record<string, import('@/types').CollectionItemWithValues[]>,
   allFields: Record<string, import('@/types').CollectionField[]>,
   visited: Set<string> = new Set(),
-  translateValues?: (itemId: string, values: Record<string, string>, fields: import('@/types').CollectionField[]) => Record<string, string>
+  translateValues?: (
+    itemId: string,
+    values: Record<string, string>,
+    fields: import('@/types').CollectionField[],
+  ) => Record<string, string>,
 ): Record<string, string> {
   const enhancedValues = { ...itemValues };
 
   // Find reference fields (single reference only)
-  const referenceFields = fields.filter(
-    f => f.type === 'reference' && f.reference_collection_id
-  );
+  const referenceFields = fields.filter((f) => f.type === 'reference' && f.reference_collection_id);
 
   for (const field of referenceFields) {
     const refItemId = itemValues[field.id];
@@ -302,7 +318,7 @@ export function resolveReferenceFieldsSync(
 
     // Find the referenced item in the store
     const refCollectionItems = allItems[field.reference_collection_id] || [];
-    const refItem = refCollectionItems.find(item => item.id === refItemId);
+    const refItem = refCollectionItems.find((item) => item.id === refItemId);
     if (!refItem) continue;
 
     // Get fields for the referenced collection
@@ -329,7 +345,7 @@ export function resolveReferenceFieldsSync(
       allItems,
       allFields,
       visited,
-      translateValues
+      translateValues,
     );
 
     // Merge nested values with proper path prefix
@@ -365,14 +381,12 @@ export function remapLayerIdsForCollectionItem(layer: Layer, suffix: string): La
     };
 
     if (l.interactions?.length) {
-      remapped.interactions = l.interactions.map(interaction => ({
+      remapped.interactions = l.interactions.map((interaction) => ({
         ...interaction,
         id: `${interaction.id}${suffix}`,
-        tweens: interaction.tweens.map(tween => ({
+        tweens: interaction.tweens.map((tween) => ({
           ...tween,
-          layer_id: originalIds.has(tween.layer_id)
-            ? `${tween.layer_id}${suffix}`
-            : tween.layer_id,
+          layer_id: originalIds.has(tween.layer_id) ? `${tween.layer_id}${suffix}` : tween.layer_id,
         })),
       }));
     }
