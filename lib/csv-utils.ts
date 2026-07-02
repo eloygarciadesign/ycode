@@ -116,14 +116,16 @@ function parseInlineNodes(html: string): TipTapNode[] {
       nodes.push({
         type: 'text',
         text: linkText,
-        marks: [{
-          type: 'richTextLink',
-          attrs: {
-            type: 'url',
-            url: { type: 'dynamic_text', data: { content: href } },
-            target: targetMatch?.[1] || null,
+        marks: [
+          {
+            type: 'richTextLink',
+            attrs: {
+              type: 'url',
+              url: { type: 'dynamic_text', data: { content: href } },
+              target: targetMatch?.[1] || null,
+            },
           },
-        }],
+        ],
       });
     }
 
@@ -142,11 +144,14 @@ function parseInlineNodes(html: string): TipTapNode[] {
     nodes[nodes.length - 1].text = nodes[nodes.length - 1].text!.replace(/\s+$/, '');
   }
 
-  return nodes.filter(n => n.text);
+  return nodes.filter((n) => n.text);
 }
 
 /** Extract src/alt from an <img> tag (or <a><img></a> wrapper) and return a richTextImage node */
-function parseImgTag(html: string, link?: { href: string; target?: string | null }): TipTapNode | null {
+function parseImgTag(
+  html: string,
+  link?: { href: string; target?: string | null },
+): TipTapNode | null {
   // When the html contains an <a> wrapper, extract the <img> portion for src/alt
   const imgTagMatch = html.match(/<img\s[^>]*\/?>/i);
   const imgHtml = imgTagMatch ? imgTagMatch[0] : html;
@@ -156,7 +161,11 @@ function parseImgTag(html: string, link?: { href: string; target?: string | null
   const altMatch = imgHtml.match(/alt=["']([^"']*)["']/i);
 
   const linkSettings = link?.href
-    ? { type: 'url', url: { type: 'dynamic_text', data: { content: link.href } }, target: link.target || undefined }
+    ? {
+      type: 'url',
+      url: { type: 'dynamic_text', data: { content: link.href } },
+      target: link.target || undefined,
+    }
     : null;
 
   return {
@@ -233,7 +242,8 @@ function htmlToTipTapJSON(html: string): TipTapNode {
     .replace(/<br\s*\/?>/gi, '\n'); // Normalize br tags
 
   // Regex to match block-level elements, self-closing img tags, and hr tags
-  const blockRegex = /<(p|ol|ul|h[1-6]|blockquote|div)(?:\s[^>]*)?>[\s\S]*?<\/\1>|<img\s[^>]*\/?>|<hr\s*\/?>/gi;
+  const blockRegex =
+    /<(p|ol|ul|h[1-6]|blockquote|div)(?:\s[^>]*)?>[\s\S]*?<\/\1>|<img\s[^>]*\/?>|<hr\s*\/?>/gi;
 
   let lastIndex = 0;
   let match;
@@ -397,13 +407,10 @@ function escapeCSVField(value: unknown): string {
  * Convert an array of objects into a CSV string. The provided headers
  * define both the column order and the keys read from each row.
  */
-export function rowsToCSV<T extends Record<string, unknown>>(
-  headers: string[],
-  rows: T[]
-): string {
+export function rowsToCSV<T extends Record<string, unknown>>(headers: string[], rows: T[]): string {
   const headerLine = headers.map(escapeCSVField).join(',');
   const dataLines = rows.map((row) =>
-    headers.map((header) => escapeCSVField(row[header])).join(',')
+    headers.map((header) => escapeCSVField(row[header])).join(','),
   );
   return [headerLine, ...dataLines].join('\n');
 }
@@ -508,7 +515,7 @@ function parseCSVRecords(text: string): string[][] {
       current = '';
 
       // Skip blank rows (all-empty fields)
-      if (fields.some(f => f !== '')) {
+      if (fields.some((f) => f !== '')) {
         records.push(fields);
       }
       fields = [];
@@ -522,7 +529,7 @@ function parseCSVRecords(text: string): string[][] {
 
   // Handle last field / record (file may not end with newline)
   fields.push(current.trim());
-  if (fields.some(f => f !== '')) {
+  if (fields.some((f) => f !== '')) {
     records.push(fields);
   }
 
@@ -559,7 +566,7 @@ export async function parseCSVFile(file: File): Promise<ParsedCSV> {
  */
 export function convertValueForFieldType(
   value: string,
-  fieldType: CollectionFieldType
+  fieldType: CollectionFieldType,
 ): string | null {
   if (!value || value.trim() === '') {
     return null;
@@ -629,10 +636,10 @@ export function convertValueForFieldType(
  */
 export function validateCSVMapping(
   columnMapping: Record<string, string>,
-  fields: CollectionField[]
+  fields: CollectionField[],
 ): string[] {
   const errors: string[] = [];
-  const fieldMap = new Map(fields.map(f => [f.id, f]));
+  const fieldMap = new Map(fields.map((f) => [f.id, f]));
   const mappedFieldIds = new Set<string>();
 
   // Check for duplicate field mappings
@@ -656,15 +663,15 @@ export function validateCSVMapping(
  */
 export function suggestColumnMapping(
   headers: string[],
-  fields: CollectionField[]
+  fields: CollectionField[],
 ): Record<string, string> {
   const mapping: Record<string, string> = {};
 
-  headers.forEach(header => {
+  headers.forEach((header) => {
     const normalizedHeader = header.toLowerCase().trim();
 
     // Try to match by field name or key
-    const matchedField = fields.find(field => {
+    const matchedField = fields.find((field) => {
       const fieldName = field.name.toLowerCase().trim();
       const fieldKey = field.key?.toLowerCase().trim();
       return fieldName === normalizedHeader || fieldKey === normalizedHeader;
@@ -703,6 +710,7 @@ export function getFieldTypeLabel(type: CollectionFieldType): string {
     phone: 'Phone',
     option: 'Option',
     count: 'Count',
+    repeater: 'Repeater',
     status: 'Status',
   };
   return labels[type] || type;
@@ -736,7 +744,7 @@ export function extractRichTextImageUrls(json: string): RichTextImageRef[] {
 /** Replace image src URLs in TipTap JSON and set assetId */
 export function replaceRichTextImageUrls(
   json: string,
-  urlToAsset: Map<string, { assetId: string; publicUrl: string }>
+  urlToAsset: Map<string, { assetId: string; publicUrl: string }>,
 ): string {
   try {
     const doc = JSON.parse(json);
@@ -756,7 +764,10 @@ export function replaceRichTextImageUrls(
   }
 }
 
-function walkTipTapNodes(node: Record<string, unknown>, cb: (n: Record<string, unknown>) => void): void {
+function walkTipTapNodes(
+  node: Record<string, unknown>,
+  cb: (n: Record<string, unknown>) => void,
+): void {
   cb(node);
   if (Array.isArray(node.content)) {
     for (const child of node.content) {

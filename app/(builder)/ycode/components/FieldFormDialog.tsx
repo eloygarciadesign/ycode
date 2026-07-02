@@ -10,12 +10,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -28,7 +23,17 @@ import {
 import Icon from '@/components/ui/icon';
 import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FIELD_TYPES_BY_CATEGORY, ASSET_FIELD_TYPES, supportsDefaultValue, isAssetFieldType, getFileManagerCategory, getAssetFieldLabel, type FieldType } from '@/lib/collection-field-utils';
+import {
+  FIELD_TYPES_BY_CATEGORY,
+  ASSET_FIELD_TYPES,
+  supportsDefaultValue,
+  isAssetFieldType,
+  getFileManagerCategory,
+  getAssetFieldLabel,
+  getFieldIcon,
+  getFieldTypeLabel,
+  type FieldType,
+} from '@/lib/collection-field-utils';
 import { parseMultiReferenceValue } from '@/lib/collection-utils';
 import { clampDateInputValue } from '@/lib/date-format-utils';
 import { useCollectionsStore } from '@/stores/useCollectionsStore';
@@ -38,7 +43,30 @@ import RichTextEditor from './RichTextEditor';
 import CollectionLinkFieldInput from './CollectionLinkFieldInput';
 import ColorFieldInput from './ColorFieldInput';
 import AssetFieldCard from './AssetFieldCard';
-import type { Asset, AssetCategoryFilter, CollectionField, CollectionFieldData, CollectionFieldType } from '@/types';
+import type {
+  Asset,
+  AssetCategoryFilter,
+  CollectionField,
+  CollectionFieldData,
+  CollectionFieldType,
+  RepeaterSubField,
+} from '@/types';
+
+/** Sub-field types allowed inside a repeater (non-nesting, non-reference types) */
+export const REPEATABLE_SUB_FIELD_TYPES: CollectionFieldType[] = [
+  'text',
+  'rich_text',
+  'number',
+  'boolean',
+  'image',
+  'link',
+  'email',
+  'phone',
+  'color',
+  'date',
+  'date_only',
+  'option',
+];
 
 export interface FieldFormData {
   name: string;
@@ -84,6 +112,7 @@ export default function FieldFormDialog({
   const [fieldOptions, setFieldOptions] = useState<{ id: string; name: string }[]>([]);
   const [countCollectionId, setCountCollectionId] = useState<string | null>(null);
   const [countFieldId, setCountFieldId] = useState<string | null>(null);
+  const [repeaterSubFields, setRepeaterSubFields] = useState<RepeaterSubField[]>([]);
   const [hasChangedType, setHasChangedType] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -94,13 +123,15 @@ export default function FieldFormDialog({
 
   // Filter out the current collection from reference options (can't reference self)
   const availableCollections = React.useMemo(() => {
-    const filtered = collections.filter(c => c.id !== currentCollectionId);
+    const filtered = collections.filter((c) => c.id !== currentCollectionId);
 
     // In edit mode, ensure the referenced collection is always in the list
     if (stableField?.reference_collection_id) {
-      const refCollectionExists = filtered.some(c => c.id === stableField.reference_collection_id);
+      const refCollectionExists = filtered.some(
+        (c) => c.id === stableField.reference_collection_id,
+      );
       if (!refCollectionExists) {
-        const refCollection = collections.find(c => c.id === stableField.reference_collection_id);
+        const refCollection = collections.find((c) => c.id === stableField.reference_collection_id);
         if (refCollection) {
           return [...filtered, refCollection];
         }
@@ -115,27 +146,31 @@ export default function FieldFormDialog({
   const isAssetType = ASSET_FIELD_TYPES.includes(fieldType);
   const isOptionType = fieldType === 'option';
   const isCountType = fieldType === 'count';
+  const isRepeaterType = fieldType === 'repeater';
   const hasDefault = supportsDefaultValue(fieldType);
 
-  const hasInvalidOptions = isOptionType && (() => {
-    if (fieldOptions.length === 0) return true;
-    const names = fieldOptions.map(o => o.name.trim());
-    if (names.some(n => !n)) return true;
-    const lowered = names.map(n => n.toLowerCase());
-    return new Set(lowered).size !== lowered.length;
-  })();
+  const hasInvalidOptions =
+    isOptionType &&
+    (() => {
+      if (fieldOptions.length === 0) return true;
+      const names = fieldOptions.map((o) => o.name.trim());
+      if (names.some((n) => !n)) return true;
+      const lowered = names.map((n) => n.toLowerCase());
+      return new Set(lowered).size !== lowered.length;
+    })();
 
   // Collections that have at least one reference / multi_reference field
   // pointing back at the current collection — only those make sense as a
   // counting source.
   const countableCollections = React.useMemo(() => {
     if (!isCountType || !currentCollectionId) return [];
-    return collections.filter(c => {
+    return collections.filter((c) => {
       if (c.id === currentCollectionId) return false;
       const fields = fieldsByCollectionId[c.id] || [];
       return fields.some(
-        f => (f.type === 'reference' || f.type === 'multi_reference')
-          && f.reference_collection_id === currentCollectionId,
+        (f) =>
+          (f.type === 'reference' || f.type === 'multi_reference') &&
+          f.reference_collection_id === currentCollectionId,
       );
     });
   }, [isCountType, currentCollectionId, collections, fieldsByCollectionId]);
@@ -146,8 +181,9 @@ export default function FieldFormDialog({
     if (!isCountType || !countCollectionId || !currentCollectionId) return [];
     const fields = fieldsByCollectionId[countCollectionId] || [];
     return fields.filter(
-      f => (f.type === 'reference' || f.type === 'multi_reference')
-        && f.reference_collection_id === currentCollectionId,
+      (f) =>
+        (f.type === 'reference' || f.type === 'multi_reference') &&
+        f.reference_collection_id === currentCollectionId,
     );
   }, [isCountType, countCollectionId, currentCollectionId, fieldsByCollectionId]);
 
@@ -155,6 +191,7 @@ export default function FieldFormDialog({
     !fieldName.trim() ||
     (isReferenceType && !referenceCollectionId) ||
     (isCountType && (!countCollectionId || !countFieldId)) ||
+    (isRepeaterType && repeaterSubFields.length === 0) ||
     hasInvalidOptions;
 
   // Reset form when dialog opens
@@ -169,11 +206,16 @@ export default function FieldFormDialog({
       setFieldMultiple(field.data?.multiple || false);
       setFieldOptions(
         Array.isArray(field.data?.options)
-          ? field.data.options.map(o => ({ id: o.id, name: o.name }))
-          : []
+          ? field.data.options.map((o) => ({ id: o.id, name: o.name }))
+          : [],
       );
       setCountCollectionId(field.data?.count?.collectionId ?? null);
       setCountFieldId(field.data?.count?.fieldId ?? null);
+      setRepeaterSubFields(
+        Array.isArray(field.data?.sub_fields)
+          ? field.data.sub_fields.map((sf) => ({ id: sf.id, name: sf.name, type: sf.type }))
+          : [],
+      );
     } else {
       setFieldName('');
       setFieldType('text');
@@ -183,6 +225,7 @@ export default function FieldFormDialog({
       setFieldOptions([]);
       setCountCollectionId(null);
       setCountFieldId(null);
+      setRepeaterSubFields([]);
     }
     setHasChangedType(false);
     setIsSubmitting(false);
@@ -217,12 +260,19 @@ export default function FieldFormDialog({
     }
   }, [isCountType, hasChangedType]);
 
+  // Clear sub-fields when switching away from repeater type
+  useEffect(() => {
+    if (hasChangedType && !isRepeaterType) {
+      setRepeaterSubFields([]);
+    }
+  }, [isRepeaterType, hasChangedType]);
+
   // When the picked count collection changes, drop a stale field selection
   // that no longer belongs to that collection.
   useEffect(() => {
     if (!isCountType) return;
     if (!countFieldId) return;
-    const stillValid = countCandidateFields.some(f => f.id === countFieldId);
+    const stillValid = countCandidateFields.some((f) => f.id === countFieldId);
     if (!stillValid) setCountFieldId(null);
   }, [isCountType, countFieldId, countCandidateFields]);
 
@@ -251,10 +301,12 @@ export default function FieldFormDialog({
       data = { multiple: fieldMultiple };
     } else if (isOptionType) {
       data = {
-        options: fieldOptions.map(o => ({ id: o.id, name: o.name.trim() })),
+        options: fieldOptions.map((o) => ({ id: o.id, name: o.name.trim() })),
       };
     } else if (isCountType && countCollectionId && countFieldId) {
       data = { count: { collectionId: countCollectionId, fieldId: countFieldId } };
+    } else if (isRepeaterType) {
+      data = { sub_fields: repeaterSubFields };
     }
 
     try {
@@ -272,35 +324,62 @@ export default function FieldFormDialog({
   };
 
   const handleAddOption = () => {
-    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : `opt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    setFieldOptions(prev => [...prev, { id, name: '' }]);
+    const id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `opt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setFieldOptions((prev) => [...prev, { id, name: '' }]);
   };
 
   const handleUpdateOptionName = (id: string, name: string) => {
-    setFieldOptions(prev => {
-      const previous = prev.find(o => o.id === id);
+    setFieldOptions((prev) => {
+      const previous = prev.find((o) => o.id === id);
       if (previous && fieldDefault.trim() === previous.name.trim()) {
         setFieldDefault(name.trim());
       }
-      return prev.map(o => (o.id === id ? { ...o, name } : o));
+      return prev.map((o) => (o.id === id ? { ...o, name } : o));
     });
   };
 
   const handleRemoveOption = (id: string) => {
-    setFieldOptions(prev => {
-      const next = prev.filter(o => o.id !== id);
+    setFieldOptions((prev) => {
+      const next = prev.filter((o) => o.id !== id);
       return next;
     });
-    const removed = fieldOptions.find(o => o.id === id);
+    const removed = fieldOptions.find((o) => o.id === id);
     if (removed && fieldDefault === removed.name.trim()) {
       setFieldDefault('');
     }
   };
 
+  const handleAddSubField = () => {
+    const id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `sf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setRepeaterSubFields((prev) => [...prev, { id, name: '', type: 'text' }]);
+  };
+
+  const handleUpdateSubFieldName = (id: string, name: string) => {
+    setRepeaterSubFields((prev) => prev.map((sf) => (sf.id === id ? { ...sf, name } : sf)));
+  };
+
+  const handleUpdateSubFieldType = (id: string, type: CollectionFieldType) => {
+    setRepeaterSubFields((prev) => prev.map((sf) => (sf.id === id ? { ...sf, type } : sf)));
+  };
+
+  const handleRemoveSubField = (id: string) => {
+    setRepeaterSubFields((prev) => prev.filter((sf) => sf.id !== id));
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(next) => { if (isSubmitting && !next) return; onOpenChange(next); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (isSubmitting && !next) return;
+        onOpenChange(next);
+      }}
+    >
       <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>
@@ -308,7 +387,13 @@ export default function FieldFormDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); if (!isSubmitDisabled && !isSubmitting) handleSubmit(); }}>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!isSubmitDisabled && !isSubmitting) handleSubmit();
+          }}
+        >
           <div className="grid grid-cols-5 items-center gap-4">
             <Label htmlFor="field-name" className="text-right">
               Name
@@ -410,7 +495,13 @@ export default function FieldFormDialog({
                     disabled={mode === 'edit'}
                   >
                     <SelectTrigger id="field-count-collection" className="w-full">
-                      <SelectValue placeholder={countableCollections.length === 0 ? 'No collections reference this one' : 'Select collection...'} />
+                      <SelectValue
+                        placeholder={
+                          countableCollections.length === 0
+                            ? 'No collections reference this one'
+                            : 'Select collection...'
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -439,10 +530,20 @@ export default function FieldFormDialog({
                   <Select
                     value={countFieldId || ''}
                     onValueChange={(value) => setCountFieldId(value || null)}
-                    disabled={mode === 'edit' || !countCollectionId || countCandidateFields.length === 0}
+                    disabled={
+                      mode === 'edit' || !countCollectionId || countCandidateFields.length === 0
+                    }
                   >
                     <SelectTrigger id="field-count-field" className="w-full">
-                      <SelectValue placeholder={!countCollectionId ? 'Pick a collection first' : countCandidateFields.length === 0 ? 'No reference fields' : 'Select field...'} />
+                      <SelectValue
+                        placeholder={
+                          !countCollectionId
+                            ? 'Pick a collection first'
+                            : countCandidateFields.length === 0
+                              ? 'No reference fields'
+                              : 'Select field...'
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -457,6 +558,74 @@ export default function FieldFormDialog({
                 </div>
               </div>
             </>
+          )}
+
+          {/* Repeater sub-fields editor */}
+          {isRepeaterType && (
+            <div className="grid grid-cols-5 items-start gap-4">
+              <Label className="text-right mt-2">Sub-fields</Label>
+              <div className="col-span-4 flex flex-col gap-2">
+                {repeaterSubFields.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {repeaterSubFields.map((subField) => (
+                      <div key={subField.id} className="flex items-center gap-1">
+                        <Input
+                          value={subField.name}
+                          onChange={(e) => handleUpdateSubFieldName(subField.id, e.target.value)}
+                          placeholder="Field name"
+                          autoComplete="off"
+                          className="flex-1"
+                        />
+                        <Select
+                          value={subField.type}
+                          onValueChange={(value: any) =>
+                            handleUpdateSubFieldType(subField.id, value)
+                          }
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {REPEATABLE_SUB_FIELD_TYPES.map((type) => (
+                                <SelectItem key={type} value={type}>
+                                  <span className="flex items-center gap-2">
+                                    <Icon
+                                      name={getFieldIcon(type)}
+                                      className="size-3 shrink-0 opacity-60"
+                                    />
+                                    {getFieldTypeLabel(type)}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveSubField(subField.id)}
+                          aria-label="Remove sub-field"
+                        >
+                          <Icon name="x" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-fit"
+                  onClick={handleAddSubField}
+                >
+                  <Icon name="plus" className="size-3" />
+                  Add sub-field
+                </Button>
+              </div>
+            </div>
           )}
 
           {/* Multiple files toggle */}
@@ -485,9 +654,7 @@ export default function FieldFormDialog({
           {/* Options editor */}
           {isOptionType && (
             <div className="grid grid-cols-5 items-start gap-4">
-              <Label className="text-right mt-2">
-                Options
-              </Label>
+              <Label className="text-right mt-2">Options</Label>
               <div className="col-span-4 flex flex-col gap-2">
                 {fieldOptions.length > 0 && (
                   <div className="flex flex-col gap-2">
@@ -559,15 +726,9 @@ export default function FieldFormDialog({
                     placeholder="Default value"
                   />
                 ) : fieldType === 'link' ? (
-                  <CollectionLinkFieldInput
-                    value={fieldDefault}
-                    onChange={setFieldDefault}
-                  />
+                  <CollectionLinkFieldInput value={fieldDefault} onChange={setFieldDefault} />
                 ) : fieldType === 'color' ? (
-                  <ColorFieldInput
-                    value={fieldDefault}
-                    onChange={setFieldDefault}
-                  />
+                  <ColorFieldInput value={fieldDefault} onChange={setFieldDefault} />
                 ) : fieldType === 'option' ? (
                   <Select
                     value={fieldDefault || '__none__'}
@@ -575,7 +736,11 @@ export default function FieldFormDialog({
                     disabled={fieldOptions.length === 0}
                   >
                     <SelectTrigger id="field-default" className="w-full">
-                      <SelectValue placeholder={fieldOptions.length === 0 ? 'Add options first' : 'Select default...'} />
+                      <SelectValue
+                        placeholder={
+                          fieldOptions.length === 0 ? 'Add options first' : 'Select default...'
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -601,7 +766,10 @@ export default function FieldFormDialog({
                       htmlFor="field-default"
                       className="text-xs text-muted-foreground font-normal cursor-pointer gap-1"
                     >
-                      Value is set to <span className="text-foreground">{fieldDefault === 'true' ? 'YES' : 'NO'}</span>
+                      Value is set to{' '}
+                      <span className="text-foreground">
+                        {fieldDefault === 'true' ? 'YES' : 'NO'}
+                      </span>
                     </Label>
                   </div>
                 ) : fieldType === 'number' ? (
@@ -671,14 +839,17 @@ export default function FieldFormDialog({
               Cancel
             </Button>
             <Button
-              type="submit"
-              size="sm"
+              type="submit" size="sm"
               disabled={isSubmitDisabled || isSubmitting}
             >
               {isSubmitting && <Spinner className="size-3" />}
               {mode === 'create'
-                ? (isSubmitting ? 'Creating...' : 'Create field')
-                : (isSubmitting ? 'Updating...' : 'Update field')}
+                ? isSubmitting
+                  ? 'Creating...'
+                  : 'Create field'
+                : isSubmitting
+                  ? 'Updating...'
+                  : 'Update field'}
             </Button>
           </div>
         </form>
@@ -695,18 +866,30 @@ interface AssetDefaultProps {
   fieldType: CollectionFieldType;
   value: string;
   onChange: (value: string) => void;
-  openFileManager: (onSelect?: ((asset: Asset) => void | false) | null, assetId?: string | null, category?: AssetCategoryFilter) => void;
+  openFileManager: (
+    onSelect?: ((asset: Asset) => void | false) | null,
+    assetId?: string | null,
+    category?: AssetCategoryFilter,
+  ) => void;
   getAsset: (id: string) => Asset | null;
 }
 
 /** Single-asset default value picker */
-function AssetDefaultSingle({ fieldType, value, onChange, openFileManager, getAsset }: AssetDefaultProps) {
+function AssetDefaultSingle({
+  fieldType,
+  value,
+  onChange,
+  openFileManager,
+  getAsset,
+}: AssetDefaultProps) {
   const asset = value ? getAsset(value) : null;
   const label = getAssetFieldLabel(fieldType);
 
   const handleSelect = () => {
     openFileManager(
-      (selectedAsset) => { onChange(selectedAsset.id); },
+      (selectedAsset) => {
+        onChange(selectedAsset.id);
+      },
       value || null,
       getFileManagerCategory(fieldType),
     );
@@ -719,7 +902,10 @@ function AssetDefaultSingle({ fieldType, value, onChange, openFileManager, getAs
         variant="secondary"
         size="sm"
         className="w-fit"
-        onClick={(e) => { e.stopPropagation(); handleSelect(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSelect();
+        }}
       >
         <Icon name="plus" className="size-3" />
         Add {label}
@@ -740,7 +926,13 @@ function AssetDefaultSingle({ fieldType, value, onChange, openFileManager, getAs
 }
 
 /** Multiple-asset default value picker */
-function AssetDefaultMultiple({ fieldType, value, onChange, openFileManager, getAsset }: AssetDefaultProps) {
+function AssetDefaultMultiple({
+  fieldType,
+  value,
+  onChange,
+  openFileManager,
+  getAsset,
+}: AssetDefaultProps) {
   const assetIds = parseMultiReferenceValue(value);
   const label = getAssetFieldLabel(fieldType);
 
@@ -759,7 +951,7 @@ function AssetDefaultMultiple({ fieldType, value, onChange, openFileManager, get
   const handleReplace = (oldAssetId: string) => {
     openFileManager(
       (selectedAsset) => {
-        onChange(JSON.stringify(assetIds.map(id => id === oldAssetId ? selectedAsset.id : id)));
+        onChange(JSON.stringify(assetIds.map((id) => (id === oldAssetId ? selectedAsset.id : id))));
       },
       oldAssetId,
       getFileManagerCategory(fieldType),
@@ -767,7 +959,7 @@ function AssetDefaultMultiple({ fieldType, value, onChange, openFileManager, get
   };
 
   const handleRemove = (assetId: string) => {
-    const updated = assetIds.filter(id => id !== assetId);
+    const updated = assetIds.filter((id) => id !== assetId);
     onChange(updated.length > 0 ? JSON.stringify(updated) : '');
   };
 
@@ -791,7 +983,10 @@ function AssetDefaultMultiple({ fieldType, value, onChange, openFileManager, get
         variant="secondary"
         size="sm"
         className="w-fit"
-        onClick={(e) => { e.stopPropagation(); handleAdd(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleAdd();
+        }}
       >
         <Icon name="plus" className="size-3" />
         Add {label}

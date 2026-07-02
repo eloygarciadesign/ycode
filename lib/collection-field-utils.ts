@@ -42,7 +42,13 @@ export const FIELD_TYPE_CATEGORIES: { id: FieldTypeCategory; label: string }[] =
 
 export const FIELD_TYPES = [
   { value: 'text', label: 'Text', icon: 'text', category: 'basic', hasDefault: true },
-  { value: 'rich_text', label: 'Rich text', icon: 'rich-text', category: 'basic', hasDefault: true },
+  {
+    value: 'rich_text',
+    label: 'Rich text',
+    icon: 'rich-text',
+    category: 'basic',
+    hasDefault: true,
+  },
   { value: 'number', label: 'Number', icon: 'hash', category: 'basic', hasDefault: true },
   { value: 'boolean', label: 'Boolean', icon: 'check', category: 'basic', hasDefault: true },
   { value: 'date', label: 'Date & Time', icon: 'calendar', category: 'basic', hasDefault: true },
@@ -56,17 +62,36 @@ export const FIELD_TYPES = [
   { value: 'audio', label: 'Audio', icon: 'audio', category: 'asset', hasDefault: true },
   { value: 'video', label: 'Video', icon: 'video', category: 'asset', hasDefault: true },
   { value: 'document', label: 'Document', icon: 'file-text', category: 'asset', hasDefault: true },
-  { value: 'reference', label: 'Reference', icon: 'database', category: 'relation', hasDefault: false },
-  { value: 'multi_reference', label: 'Multi-reference', icon: 'database', category: 'relation', hasDefault: false },
+  {
+    value: 'reference',
+    label: 'Reference',
+    icon: 'database',
+    category: 'relation',
+    hasDefault: false,
+  },
+  {
+    value: 'multi_reference',
+    label: 'Multi-reference',
+    icon: 'database',
+    category: 'relation',
+    hasDefault: false,
+  },
   { value: 'count', label: 'Count', icon: 'hash', category: 'relation', hasDefault: false },
-] as const satisfies readonly { value: string; label: string; icon: string; category: FieldTypeCategory; hasDefault: boolean }[];
+  { value: 'repeater', label: 'Repeater', icon: 'rows', category: 'basic', hasDefault: false },
+] as const satisfies readonly {
+  value: string;
+  label: string;
+  icon: string;
+  category: FieldTypeCategory;
+  hasDefault: boolean;
+}[];
 
 export type FieldType = (typeof FIELD_TYPES)[number]['value'];
 
 /** Field types grouped by category (preserves order from FIELD_TYPE_CATEGORIES) */
-export const FIELD_TYPES_BY_CATEGORY = FIELD_TYPE_CATEGORIES.map(cat => ({
+export const FIELD_TYPES_BY_CATEGORY = FIELD_TYPE_CATEGORIES.map((cat) => ({
   ...cat,
-  types: FIELD_TYPES.filter(t => t.category === cat.id),
+  types: FIELD_TYPES.filter((t) => t.category === cat.id),
 }));
 
 /** Valid field type values for API validation (includes system types like 'status') */
@@ -74,29 +99,27 @@ export const VALID_FIELD_TYPES: readonly string[] = [...FIELD_TYPES.map((t) => t
 
 /** Check if a field type supports setting a default value */
 export function supportsDefaultValue(fieldType: CollectionFieldType | undefined): boolean {
-  return FIELD_TYPES.some(t => t.value === fieldType && t.hasDefault);
+  return FIELD_TYPES.some((t) => t.value === fieldType && t.hasDefault);
 }
 
 /** Field types that can be displayed in variable selectors (excludes multi_reference) */
-export const DISPLAYABLE_FIELD_TYPES: CollectionFieldType[] = FIELD_TYPES
-  .filter(t => t.value !== 'multi_reference')
-  .map(t => t.value) as CollectionFieldType[];
+export const DISPLAYABLE_FIELD_TYPES: CollectionFieldType[] = FIELD_TYPES.filter(
+  (t) => t.value !== 'multi_reference',
+).map((t) => t.value) as CollectionFieldType[];
 
 /** Check if a string is a valid field type */
 export function isValidFieldType(type: string): type is FieldType {
   return VALID_FIELD_TYPES.includes(type);
 }
 
-const FIELD_TYPES_BY_VALUE: Record<FieldType, (typeof FIELD_TYPES)[number]> =
-  Object.fromEntries(FIELD_TYPES.map((t) => [t.value, t])) as Record<
-    FieldType,
-    (typeof FIELD_TYPES)[number]
-  >;
+const FIELD_TYPES_BY_VALUE: Record<FieldType, (typeof FIELD_TYPES)[number]> = Object.fromEntries(
+  FIELD_TYPES.map((t) => [t.value, t]),
+) as Record<FieldType, (typeof FIELD_TYPES)[number]>;
 
 /** Get icon name for field type. Returns `defaultIcon` for invalid field types. */
 export function getFieldIcon(
   fieldType: CollectionFieldType | undefined,
-  defaultIcon: IconProps['name'] = 'text'
+  defaultIcon: IconProps['name'] = 'text',
 ): IconProps['name'] {
   if (!fieldType) return defaultIcon;
   return FIELD_TYPES_BY_VALUE[fieldType as FieldType]?.icon ?? defaultIcon;
@@ -184,7 +207,7 @@ export const COMPARE_OPERATORS: { value: string; label: string }[] = [
 
 /** Get operators available for a given field type */
 export function getOperatorsForFieldType(
-  fieldType: CollectionFieldType | undefined
+  fieldType: CollectionFieldType | undefined,
 ): OperatorOption[] {
   switch (fieldType) {
     case 'number':
@@ -228,9 +251,7 @@ export function operatorRequiresValue(operator: VisibilityOperator): boolean {
 
 /** Check if operator requires collection item selection */
 export function operatorRequiresItemSelection(operator: VisibilityOperator): boolean {
-  return ['is_one_of', 'is_not_one_of', 'contains_all_of', 'contains_exactly'].includes(
-    operator
-  );
+  return ['is_one_of', 'is_not_one_of', 'contains_all_of', 'contains_exactly'].includes(operator);
 }
 
 /**
@@ -291,7 +312,7 @@ export function getDatePartsInTimezone(
       month: '2-digit',
       day: '2-digit',
     }).formatToParts(date);
-    const get = (t: string) => Number(parts.find(p => p.type === t)?.value);
+    const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
     return { year: get('year'), month: get('month'), day: get('day') };
   } catch {
     return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate() };
@@ -325,8 +346,15 @@ export function zonedTimeToUtcMs(
       minute: '2-digit',
       second: '2-digit',
     }).formatToParts(new Date(utcGuess));
-    const get = (t: string) => Number(parts.find(p => p.type === t)?.value);
-    const wallAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+    const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+    const wallAsUtc = Date.UTC(
+      get('year'),
+      get('month') - 1,
+      get('day'),
+      get('hour'),
+      get('minute'),
+      get('second'),
+    );
     return utcGuess - (wallAsUtc - utcGuess);
   } catch {
     return utcGuess;
@@ -407,11 +435,14 @@ export function resolveDateFilterValue(
  * (e.g. `$today`). Such conditions resolve relative to the current date, so
  * the static export re-evaluates them client-side instead of baking the result.
  */
-export function isDynamicDateCondition(
-  condition: { source?: string; fieldType?: string; value?: string },
-): boolean {
+export function isDynamicDateCondition(condition: {
+  source?: string;
+  fieldType?: string;
+  value?: string;
+}): boolean {
   if (condition.source !== 'collection_field') return false;
-  if (!condition.fieldType || !isDateFieldType(condition.fieldType as CollectionFieldType)) return false;
+  if (!condition.fieldType || !isDateFieldType(condition.fieldType as CollectionFieldType))
+    return false;
   return isDatePreset(condition.value);
 }
 
@@ -421,7 +452,11 @@ export function isDynamicDateCondition(
  */
 export function hasDynamicDateRule(
   visibility:
-    | { groups?: Array<{ conditions?: Array<{ source?: string; fieldType?: string; value?: string }> }> }
+    | {
+        groups?: Array<{
+          conditions?: Array<{ source?: string; fieldType?: string; value?: string }>;
+        }>;
+      }
     | undefined
     | null,
 ): boolean {
@@ -515,7 +550,7 @@ export function compareDateFilter(
 /** Find a field by ID from an array of fields */
 export function findFieldById(
   fields: CollectionField[],
-  fieldId: string
+  fieldId: string,
 ): CollectionField | undefined {
   return fields.find((f) => f.id === fieldId);
 }
@@ -527,19 +562,30 @@ export function getFieldName(fields: CollectionField[], fieldId: string): string
 
 /** Find the computed status field ID for a collection's fields */
 export function findStatusFieldId(fields: CollectionField[]): string | null {
-  return fields.find(f => f.type === 'status' && f.is_computed)?.id ?? null;
+  return fields.find((f) => f.type === 'status' && f.is_computed)?.id ?? null;
 }
 
 /** Action types for changing an item's publish status */
 export type StatusAction = 'draft' | 'stage' | 'publish';
 
 /** Serialize a status value object to JSON for storage in item values */
-export function buildStatusValue(isPublishable: boolean, isPublished: boolean, isModified = false): string {
-  return JSON.stringify({ is_publishable: isPublishable, is_published: isPublished, is_modified: isModified });
+export function buildStatusValue(
+  isPublishable: boolean,
+  isPublished: boolean,
+  isModified = false,
+): string {
+  return JSON.stringify({
+    is_publishable: isPublishable,
+    is_published: isPublished,
+    is_modified: isModified,
+  });
 }
 
 /** Derive optimistic is_publishable/is_published flags from a status action */
-export function getStatusFlagsFromAction(action: StatusAction): { isPublishable: boolean; isPublished: boolean } {
+export function getStatusFlagsFromAction(action: StatusAction): {
+  isPublishable: boolean;
+  isPublished: boolean;
+} {
   return {
     isPublishable: action !== 'draft',
     isPublished: action === 'publish',
@@ -549,7 +595,7 @@ export function getStatusFlagsFromAction(action: StatusAction): { isPublishable:
 /** Get field type by ID. Returns undefined if not found. */
 export function getFieldType(
   fields: CollectionField[],
-  fieldId: string
+  fieldId: string,
 ): CollectionFieldType | undefined {
   return findFieldById(fields, fieldId)?.type;
 }
@@ -560,10 +606,7 @@ export function isReferenceType(fieldType: CollectionFieldType | undefined): boo
 }
 
 /** Validate field value. Returns null if valid, error message if invalid. Only email and phone have validation. */
-export function validateFieldValue(
-  fieldType: CollectionFieldType,
-  value: string
-): string | null {
+export function validateFieldValue(fieldType: CollectionFieldType, value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
@@ -593,9 +636,7 @@ export function validateFieldValue(
  * Find the best display field for a collection.
  * Priority: 'title' key → 'name' key → first fillable text field → first field
  */
-export function findDisplayField(
-  fields: CollectionField[]
-): CollectionField | null {
+export function findDisplayField(fields: CollectionField[]): CollectionField | null {
   const titleField = fields.find((f) => f.key === 'title');
   if (titleField) return titleField;
 
@@ -603,7 +644,7 @@ export function findDisplayField(
   if (nameField) return nameField;
 
   const textField = fields.find(
-    (f) => (f.type === 'text' || f.type === 'email' || f.type === 'phone') && f.fillable
+    (f) => (f.type === 'text' || f.type === 'email' || f.type === 'phone') && f.fillable,
   );
   if (textField) return textField;
 
@@ -613,7 +654,7 @@ export function findDisplayField(
 /** Get display name for a collection item using the display field */
 export function getItemDisplayName(
   item: CollectionItemWithValues,
-  displayField: CollectionField | null
+  displayField: CollectionField | null,
 ): string {
   if (!displayField) return 'Untitled';
   return item.values[displayField.id] || 'Untitled';
@@ -699,7 +740,7 @@ export function buildGlobalsMetaMap(globals: GlobalVariable[]): Record<string, G
  */
 export function mergeGlobalsIntoFieldData(
   base: Record<string, string> | undefined,
-  globalsData: Record<string, string> | undefined
+  globalsData: Record<string, string> | undefined,
 ): Record<string, string> | undefined {
   if (!globalsData || Object.keys(globalsData).length === 0) return base;
   if (!base || Object.keys(base).length === 0) return globalsData;
@@ -744,7 +785,14 @@ export interface BuildFieldGroupsConfig {
  * Returns groups for collection layer fields and/or page collection fields.
  */
 export function buildFieldGroups(config: BuildFieldGroupsConfig): FieldGroup[] | undefined {
-  const { parentCollectionLayers, page, fieldsByCollectionId, collections, multiAssetContext, globals } = config;
+  const {
+    parentCollectionLayers,
+    page,
+    fieldsByCollectionId,
+    collections,
+    multiAssetContext,
+    globals,
+  } = config;
   const groups: FieldGroup[] = [];
   const addedCollectionIds = new Set<string>();
 
@@ -769,7 +817,7 @@ export function buildFieldGroups(config: BuildFieldGroupsConfig): FieldGroup[] |
     }
 
     const collectionFields = fieldsByCollectionId[collectionId] || [];
-    const collection = collections.find(c => c.id === collectionId);
+    const collection = collections.find((c) => c.id === collectionId);
     if (collectionFields.length > 0) {
       const isClosest = i === 0;
       groups.push({
@@ -788,7 +836,7 @@ export function buildFieldGroups(config: BuildFieldGroupsConfig): FieldGroup[] |
   if (page?.is_dynamic && page?.settings?.cms?.collection_id) {
     const pageCollectionId = page.settings.cms.collection_id;
     const pageCollectionFields = fieldsByCollectionId[pageCollectionId] || [];
-    const pageCollection = collections.find(c => c.id === pageCollectionId);
+    const pageCollection = collections.find((c) => c.id === pageCollectionId);
     if (pageCollectionFields.length > 0) {
       groups.push({
         fields: pageCollectionFields,
@@ -815,7 +863,15 @@ export function buildFieldGroups(config: BuildFieldGroupsConfig): FieldGroup[] |
 }
 
 /** Field types that can be used as link targets */
-export const LINK_FIELD_TYPES: CollectionFieldType[] = ['link', 'email', 'phone', 'image', 'audio', 'video', 'document'];
+export const LINK_FIELD_TYPES: CollectionFieldType[] = [
+  'link',
+  'email',
+  'phone',
+  'image',
+  'audio',
+  'video',
+  'document',
+];
 
 /** Field types that store media assets (image, audio, video) */
 export const MEDIA_FIELD_TYPES: CollectionFieldType[] = ['image', 'audio', 'video'];
@@ -839,10 +895,22 @@ export const VIDEO_FIELD_TYPES: CollectionFieldType[] = ['video'];
 export const VIDEO_ID_FIELD_TYPES: CollectionFieldType[] = ['text'];
 
 /** Field types that can be bound to simple text content (excludes rich_text and media/asset types) */
-export const SIMPLE_TEXT_FIELD_TYPES: CollectionFieldType[] = ['text', 'number', 'date', 'date_only', 'email', 'phone', 'option', 'count'];
+export const SIMPLE_TEXT_FIELD_TYPES: CollectionFieldType[] = [
+  'text',
+  'number',
+  'date',
+  'date_only',
+  'email',
+  'phone',
+  'option',
+  'count',
+];
 
 /** Field types that can be bound to rich text content (excludes media/asset types) */
-export const RICH_TEXT_FIELD_TYPES: CollectionFieldType[] = [...SIMPLE_TEXT_FIELD_TYPES, 'rich_text'];
+export const RICH_TEXT_FIELD_TYPES: CollectionFieldType[] = [
+  ...SIMPLE_TEXT_FIELD_TYPES,
+  'rich_text',
+];
 
 /** Field types for richText layer CMS bindings (only rich_text) */
 export const RICH_TEXT_ONLY_FIELD_TYPES: CollectionFieldType[] = ['rich_text'];
@@ -870,10 +938,14 @@ export function isMultipleAssetField(field: CollectionField): boolean {
 /** Map an asset field type to a single ASSET_CATEGORIES value */
 export function getAssetCategoryForField(fieldType: CollectionFieldType): AssetCategory {
   switch (fieldType) {
-    case 'image': return ASSET_CATEGORIES.IMAGES;
-    case 'audio': return ASSET_CATEGORIES.AUDIO;
-    case 'video': return ASSET_CATEGORIES.VIDEOS;
-    default: return ASSET_CATEGORIES.DOCUMENTS;
+    case 'image':
+      return ASSET_CATEGORIES.IMAGES;
+    case 'audio':
+      return ASSET_CATEGORIES.AUDIO;
+    case 'video':
+      return ASSET_CATEGORIES.VIDEOS;
+    default:
+      return ASSET_CATEGORIES.DOCUMENTS;
   }
 }
 
@@ -886,7 +958,11 @@ export function getFileManagerCategory(fieldType: CollectionFieldType): AssetCat
 /** Validate that an asset matches the expected field type */
 export function isValidAssetForField(asset: Asset, fieldType: CollectionFieldType): boolean {
   if (fieldType === 'image') {
-    return !!(asset.mime_type && (isAssetOfType(asset.mime_type, ASSET_CATEGORIES.IMAGES) || isAssetOfType(asset.mime_type, ASSET_CATEGORIES.ICONS)));
+    return !!(
+      asset.mime_type &&
+      (isAssetOfType(asset.mime_type, ASSET_CATEGORIES.IMAGES) ||
+        isAssetOfType(asset.mime_type, ASSET_CATEGORIES.ICONS))
+    );
   }
   const category = getAssetCategoryForField(fieldType);
   return !!(asset.mime_type && isAssetOfType(asset.mime_type, category));
@@ -895,22 +971,32 @@ export function isValidAssetForField(asset: Asset, fieldType: CollectionFieldTyp
 /** Get human-readable label for asset field add buttons (e.g. "an image") */
 export function getAssetFieldLabel(fieldType: CollectionFieldType): string {
   switch (fieldType) {
-    case 'image': return 'an image';
-    case 'audio': return 'an audio';
-    case 'video': return 'a video';
-    case 'document': return 'a document';
-    default: return 'a file';
+    case 'image':
+      return 'an image';
+    case 'audio':
+      return 'an audio';
+    case 'video':
+      return 'a video';
+    case 'document':
+      return 'a document';
+    default:
+      return 'a file';
   }
 }
 
 /** Get short label for asset field types (e.g. "image") */
 export function getAssetFieldTypeLabel(fieldType: CollectionFieldType): string {
   switch (fieldType) {
-    case 'image': return 'image';
-    case 'audio': return 'audio';
-    case 'video': return 'video';
-    case 'document': return 'document';
-    default: return 'file';
+    case 'image':
+      return 'image';
+    case 'audio':
+      return 'audio';
+    case 'video':
+      return 'video';
+    case 'document':
+      return 'document';
+    default:
+      return 'file';
   }
 }
 
@@ -957,12 +1043,72 @@ export function buildMultiAssetVirtualFields(): CollectionField[] {
   };
 
   return [
-    { ...baseField, id: MULTI_ASSET_VIRTUAL_FIELDS.URL, name: 'File URL', type: 'image' as CollectionFieldType, key: null, default: null, reference_collection_id: null, data: {}, fillable: false },
-    { ...baseField, id: MULTI_ASSET_VIRTUAL_FIELDS.FILENAME, name: 'File name', type: 'text' as CollectionFieldType, key: null, default: null, reference_collection_id: null, data: {}, fillable: false },
-    { ...baseField, id: MULTI_ASSET_VIRTUAL_FIELDS.FILE_SIZE, name: 'File size', type: 'text' as CollectionFieldType, key: null, default: null, reference_collection_id: null, data: {}, fillable: false },
-    { ...baseField, id: MULTI_ASSET_VIRTUAL_FIELDS.MIME_TYPE, name: 'MIME type', type: 'text' as CollectionFieldType, key: null, default: null, reference_collection_id: null, data: {}, fillable: false },
-    { ...baseField, id: MULTI_ASSET_VIRTUAL_FIELDS.WIDTH, name: 'Width', type: 'text' as CollectionFieldType, key: null, default: null, reference_collection_id: null, data: {}, fillable: false },
-    { ...baseField, id: MULTI_ASSET_VIRTUAL_FIELDS.HEIGHT, name: 'Height', type: 'text' as CollectionFieldType, key: null, default: null, reference_collection_id: null, data: {}, fillable: false },
+    {
+      ...baseField,
+      id: MULTI_ASSET_VIRTUAL_FIELDS.URL,
+      name: 'File URL',
+      type: 'image' as CollectionFieldType,
+      key: null,
+      default: null,
+      reference_collection_id: null,
+      data: {},
+      fillable: false,
+    },
+    {
+      ...baseField,
+      id: MULTI_ASSET_VIRTUAL_FIELDS.FILENAME,
+      name: 'File name',
+      type: 'text' as CollectionFieldType,
+      key: null,
+      default: null,
+      reference_collection_id: null,
+      data: {},
+      fillable: false,
+    },
+    {
+      ...baseField,
+      id: MULTI_ASSET_VIRTUAL_FIELDS.FILE_SIZE,
+      name: 'File size',
+      type: 'text' as CollectionFieldType,
+      key: null,
+      default: null,
+      reference_collection_id: null,
+      data: {},
+      fillable: false,
+    },
+    {
+      ...baseField,
+      id: MULTI_ASSET_VIRTUAL_FIELDS.MIME_TYPE,
+      name: 'MIME type',
+      type: 'text' as CollectionFieldType,
+      key: null,
+      default: null,
+      reference_collection_id: null,
+      data: {},
+      fillable: false,
+    },
+    {
+      ...baseField,
+      id: MULTI_ASSET_VIRTUAL_FIELDS.WIDTH,
+      name: 'Width',
+      type: 'text' as CollectionFieldType,
+      key: null,
+      default: null,
+      reference_collection_id: null,
+      data: {},
+      fillable: false,
+    },
+    {
+      ...baseField,
+      id: MULTI_ASSET_VIRTUAL_FIELDS.HEIGHT,
+      name: 'Height',
+      type: 'text' as CollectionFieldType,
+      key: null,
+      default: null,
+      reference_collection_id: null,
+      data: {},
+      fillable: false,
+    },
   ];
 }
 
@@ -986,10 +1132,11 @@ function referenceHasMatchingSubFields(
   visited.add(field.reference_collection_id);
 
   const subFields = allFields[field.reference_collection_id] || [];
-  return subFields.some(f => {
+  return subFields.some((f) => {
     if (f.type === 'multi_reference') return false;
     if (allowedTypes.includes(f.type as CollectionFieldType)) return true;
-    if (f.type === 'reference') return referenceHasMatchingSubFields(f, allowedTypes, allFields, visited);
+    if (f.type === 'reference')
+      return referenceHasMatchingSubFields(f, allowedTypes, allFields, visited);
     return false;
   });
 }
@@ -1004,13 +1151,13 @@ function referenceHasMatchingSubFields(
 export function filterFieldGroupsByType(
   fieldGroups: FieldGroup[] | undefined,
   allowedTypes: CollectionFieldType[],
-  options?: { excludeMultipleAsset?: boolean; allFields?: Record<string, CollectionField[]> }
+  options?: { excludeMultipleAsset?: boolean; allFields?: Record<string, CollectionField[]> },
 ): FieldGroup[] {
   if (!fieldGroups || fieldGroups.length === 0) return [];
 
   return fieldGroups
-    .map(group => {
-      const fields = group.fields.filter(field => {
+    .map((group) => {
+      const fields = group.fields.filter((field) => {
         if (field.type === 'reference' && field.reference_collection_id) {
           if (options?.allFields) {
             return referenceHasMatchingSubFields(field, allowedTypes, options.allFields);
@@ -1029,14 +1176,14 @@ export function filterFieldGroupsByType(
       });
       return { ...group, fields };
     })
-    .filter(group => group.fields.length > 0);
+    .filter((group) => group.fields.length > 0);
 }
 
 /**
  * Flatten field groups into a single array of fields.
  */
 export function flattenFieldGroups(fieldGroups: FieldGroup[] | undefined): CollectionField[] {
-  return fieldGroups?.flatMap(g => g.fields) || [];
+  return fieldGroups?.flatMap((g) => g.fields) || [];
 }
 
 /** Prefix for reference-field-based collection item resolution (page source) */
@@ -1057,7 +1204,7 @@ export interface ReferenceItemOption {
 export function buildReferenceItemOptions(
   isDynamicPage: boolean,
   targetPageCollectionId: string | null,
-  fieldGroups: FieldGroup[] | undefined
+  fieldGroups: FieldGroup[] | undefined,
 ): ReferenceItemOption[] {
   if (!isDynamicPage || !targetPageCollectionId || !fieldGroups) return [];
   const options: ReferenceItemOption[] = [];
@@ -1080,9 +1227,9 @@ export function buildReferenceItemOptions(
  */
 export function hasFieldsMatching(
   fieldGroups: FieldGroup[] | undefined,
-  predicate: (field: CollectionField) => boolean
+  predicate: (field: CollectionField) => boolean,
 ): boolean {
-  return fieldGroups?.some(g => g.fields.some(predicate)) ?? false;
+  return fieldGroups?.some((g) => g.fields.some(predicate)) ?? false;
 }
 
 // =============================================================================
@@ -1100,7 +1247,11 @@ export interface FieldSelectionInfo {
  * Encode field selection info into a single string value for Select components.
  * Format: "source:layerId:fieldId" for collection sources, "page::fieldId" for page sources
  */
-export function encodeFieldSelection(fieldId: string, source?: FieldSourceType, layerId?: string): string {
+export function encodeFieldSelection(
+  fieldId: string,
+  source?: FieldSourceType,
+  layerId?: string,
+): string {
   if (source === 'page') {
     return `page::${fieldId}`;
   }
@@ -1131,10 +1282,13 @@ export function parseFieldSelection(value: string): FieldSelectionInfo {
  * Get current field selection value from field groups by field ID.
  * Returns the encoded value if the field is found in the groups.
  */
-export function getEncodedFieldValue(fieldId: string | null | undefined, fieldGroups: FieldGroup[] | undefined): string {
+export function getEncodedFieldValue(
+  fieldId: string | null | undefined,
+  fieldGroups: FieldGroup[] | undefined,
+): string {
   if (!fieldId || !fieldGroups) return '';
   for (const group of fieldGroups) {
-    const field = group.fields.find(f => f.id === fieldId);
+    const field = group.fields.find((f) => f.id === fieldId);
     if (field) {
       return encodeFieldSelection(fieldId, group.source, group.layerId);
     }
@@ -1159,14 +1313,15 @@ export function buildFieldGroupsForLayer(
   const parentCollection = parents[0] || null;
   const collectionVariable = parentCollection ? getCollectionVariable(parentCollection) : null;
   const isMultiAssetParent = collectionVariable?.source_field_type === 'multi_asset';
-  const multiAssetContext = isMultiAssetParent && collectionVariable.source_field_id
-    ? {
-      sourceFieldId: collectionVariable.source_field_id,
-      source: (collectionVariable.source_field_source || 'collection') as FieldSourceType,
-    }
-    : null;
+  const multiAssetContext =
+    isMultiAssetParent && collectionVariable.source_field_id
+      ? {
+        sourceFieldId: collectionVariable.source_field_id,
+        source: (collectionVariable.source_field_source || 'collection') as FieldSourceType,
+      }
+      : null;
   const parentCollectionLayers = parents
-    .map(layer => ({ layerId: layer.id, collectionId: getCollectionVariable(layer)?.id }))
+    .map((layer) => ({ layerId: layer.id, collectionId: getCollectionVariable(layer)?.id }))
     .filter((item): item is ParentCollectionLayer => !!item.collectionId);
 
   return buildFieldGroups({

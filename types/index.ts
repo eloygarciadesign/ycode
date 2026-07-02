@@ -344,7 +344,21 @@ export interface InteractionTween {
 
 export type ApplyStyles = 'on-load' | 'on-trigger';
 
-export type TweenPropertyKey = 'x' | 'y' | 'rotation' | 'scale' | 'skewX' | 'skewY' | 'autoAlpha' | 'display' | 'width' | 'height' | 'backgroundColor' | 'filterBlur' | 'filterBrightness' | 'filterGrayscale';
+export type TweenPropertyKey =
+  | 'x'
+  | 'y'
+  | 'rotation'
+  | 'scale'
+  | 'skewX'
+  | 'skewY'
+  | 'autoAlpha'
+  | 'display'
+  | 'width'
+  | 'height'
+  | 'backgroundColor'
+  | 'filterBlur'
+  | 'filterBrightness'
+  | 'filterGrayscale';
 
 export type InteractionApplyStyles = Partial<Record<TweenPropertyKey, ApplyStyles>>;
 
@@ -666,8 +680,8 @@ export interface LayerTemplate extends Omit<Layer, 'id' | 'children'> {
 
 // Template reference marker (lazy reference resolved during template instantiation)
 export type LayerTemplateRef = { __ref: string } & Partial<Omit<LayerTemplate, 'children'>> & {
-  children?: Array<LayerTemplate | LayerTemplateRef>;
-};
+    children?: Array<LayerTemplate | LayerTemplateRef>;
+  };
 
 // Block template definition (used in template collections)
 export interface BlockTemplate {
@@ -678,8 +692,8 @@ export interface BlockTemplate {
 
 // Component Variable Types (ComponentVariableValue defined after text variable types)
 export interface ComponentVariable {
-  id: string;        // Unique variable ID
-  name: string;      // Display name (e.g., "Button title")
+  id: string; // Unique variable ID
+  name: string; // Display name (e.g., "Button title")
   type?: 'text' | 'rich_text' | 'image' | 'link' | 'audio' | 'video' | 'icon' | 'variant'; // Variable type (defaults to 'text' for backwards compatibility)
   placeholder?: string; // Placeholder text shown in text override inputs
   default_value?: ComponentVariableValue; // Default value
@@ -899,12 +913,20 @@ export interface SiteSettings {
 
 export interface Redirect {
   id: string;
-  oldUrl: string;   // Internal path only, e.g. "/about-us"
-  newUrl: string;   // Internal path "/about" OR external URL "https://example.com"
+  oldUrl: string; // Internal path only, e.g. "/about-us"
+  newUrl: string; // Internal path "/about" OR external URL "https://example.com"
   type?: '301' | '302'; // Permanent vs temporary (default 301)
 }
 
-export type SmtpProvider = 'google' | 'microsoft365' | 'mailersend' | 'postmark' | 'sendgrid' | 'mailgun' | 'amazonses' | 'other';
+export type SmtpProvider =
+  | 'google'
+  | 'microsoft365'
+  | 'mailersend'
+  | 'postmark'
+  | 'sendgrid'
+  | 'mailgun'
+  | 'amazonses'
+  | 'other';
 
 export type EmailMode = 'ycode' | 'custom';
 
@@ -1052,7 +1074,15 @@ export interface CollaborationState {
 
 export interface ActivityNotification {
   id: string;
-  type: 'user_joined' | 'user_left' | 'layer_edit_started' | 'layer_edit_ended' | 'page_published' | 'user_idle' | 'page_created' | 'page_deleted';
+  type:
+    | 'user_joined'
+    | 'user_left'
+    | 'layer_edit_started'
+    | 'layer_edit_ended'
+    | 'page_published'
+    | 'user_idle'
+    | 'page_created'
+    | 'page_deleted';
   user_id: string;
   user_name: string;
   layer_id?: string;
@@ -1063,7 +1093,27 @@ export interface ActivityNotification {
 }
 
 // Collection Types (EAV Architecture)
-export type CollectionFieldType = 'text' | 'number' | 'boolean' | 'date' | 'date_only' | 'color' | 'reference' | 'multi_reference' | 'rich_text' | 'image' | 'audio' | 'video' | 'document' | 'link' | 'email' | 'phone' | 'option' | 'count' | 'status';
+export type CollectionFieldType =
+  | 'text'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'date_only'
+  | 'color'
+  | 'reference'
+  | 'multi_reference'
+  | 'rich_text'
+  | 'image'
+  | 'audio'
+  | 'video'
+  | 'document'
+  | 'link'
+  | 'email'
+  | 'phone'
+  | 'option'
+  | 'count'
+  | 'status'
+  | 'repeater';
 export type CollectionSortDirection = 'asc' | 'desc' | 'manual';
 
 export interface CollectionSorting {
@@ -1098,12 +1148,20 @@ export interface UpdateCollectionData {
   order?: number;
 }
 
+/** Sub-field definition for repeater fields */
+export interface RepeaterSubField {
+  id: string;
+  name: string;
+  type: CollectionFieldType;
+}
+
 /** Field-specific settings stored in the data column */
 export interface CollectionFieldData {
   multiple?: boolean; // For asset fields - allow multiple files
   options?: { id: string; name: string }[]; // For option fields - selectable values
   // For count fields: which child collection / reference field to count back from
   count?: { collectionId: string; fieldId: string };
+  sub_fields?: RepeaterSubField[]; // For repeater fields - sub-field definitions
 }
 
 export interface CreateCollectionFieldData {
@@ -1276,7 +1334,14 @@ export interface ColorVariable {
 
 export interface VariableType {
   id?: string; // Reference to ComponentVariable.id (for component variable linking)
-  type: 'field' | 'asset' | 'video'  | 'dynamic_rich_text' | 'dynamic_text'| 'static_text' | 'pagination';
+  type:
+    | 'field'
+    | 'asset'
+    | 'video'
+    | 'dynamic_rich_text'
+    | 'dynamic_text'
+    | 'static_text'
+    | 'pagination';
   data: object;
 }
 
@@ -1415,7 +1480,15 @@ export interface VariantSettingsValue {
 }
 
 // Component variable value type (text, image, link, audio, video, icon, and variant variables)
-export type ComponentVariableValue = DynamicTextVariable | DynamicRichTextVariable | ImageSettingsValue | LinkSettingsValue | AudioSettingsValue | VideoSettingsValue | IconSettingsValue | VariantSettingsValue;
+export type ComponentVariableValue =
+  | DynamicTextVariable
+  | DynamicRichTextVariable
+  | ImageSettingsValue
+  | LinkSettingsValue
+  | AudioSettingsValue
+  | VideoSettingsValue
+  | IconSettingsValue
+  | VariantSettingsValue;
 
 // Pagination Layer Definition (partial Layer for styling pagination controls)
 export interface PaginationLayerConfig {
@@ -1482,12 +1555,21 @@ export interface CollectionPaginationMeta {
 // Conditional Visibility Types
 // Operators are grouped by field type for type-aware condition building
 
-export type TextOperator = 'is' | 'is_not' | 'contains' | 'does_not_contain' | 'is_present' | 'is_empty';
+export type TextOperator =
+  'is' | 'is_not' | 'contains' | 'does_not_contain' | 'is_present' | 'is_empty';
 export type NumberOperator = 'is' | 'is_not' | 'lt' | 'lte' | 'gt' | 'gte';
-export type DateOperator = 'is' | 'is_before' | 'is_after' | 'is_between' | 'is_empty' | 'is_not_empty';
+export type DateOperator =
+  'is' | 'is_before' | 'is_after' | 'is_between' | 'is_empty' | 'is_not_empty';
 export type BooleanOperator = 'is';
 export type ReferenceOperator = 'is_one_of' | 'is_not_one_of' | 'exists' | 'does_not_exist';
-export type MultiReferenceOperator = 'is_one_of' | 'is_not_one_of' | 'contains_all_of' | 'contains_exactly' | 'item_count' | 'has_items' | 'has_no_items';
+export type MultiReferenceOperator =
+  | 'is_one_of'
+  | 'is_not_one_of'
+  | 'contains_all_of'
+  | 'contains_exactly'
+  | 'item_count'
+  | 'has_items'
+  | 'has_no_items';
 export type PageCollectionOperator = 'item_count' | 'has_items' | 'has_no_items';
 // Self filter: compare the item's own ID against a set of IDs (statically picked
 // and/or the current dynamic page item). Mirrors reference field semantics.
@@ -1558,7 +1640,13 @@ export interface ConditionalVisibility {
  * all other conditions carry their export-time result, baked in.
  */
 export type DynamicVisibilityCondition =
-  | { dynamic: true; operator: VisibilityOperator; value: string; fieldValue: string; dateOnly?: boolean }
+  | {
+      dynamic: true;
+      operator: VisibilityOperator;
+      value: string;
+      fieldValue: string;
+      dateOnly?: boolean;
+    }
   | { dynamic: false; result: boolean };
 
 // Localisation Types
@@ -1599,8 +1687,8 @@ export interface UpdateLocaleData {
   is_default?: boolean;
 }
 
-export type TranslationSourceType = 'page' | 'folder' | 'component' | 'cms'
-export type TranslationContentType = 'text' | 'richtext' | 'asset_id'
+export type TranslationSourceType = 'page' | 'folder' | 'component' | 'cms';
+export type TranslationContentType = 'text' | 'richtext' | 'asset_id';
 
 export interface Translation {
   id: string;
@@ -1775,7 +1863,8 @@ export interface UpdateFontData {
 
 // Sitemap Settings
 export type SitemapMode = 'none' | 'auto' | 'custom';
-export type SitemapChangeFrequency = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+export type SitemapChangeFrequency =
+  'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
 
 export interface SitemapSettings {
   mode: SitemapMode;
