@@ -1517,7 +1517,8 @@ export interface CollectionVariable {
   limit?: number; // Maximum number of items to show (deprecated when pagination enabled)
   offset?: number; // Number of items to skip (deprecated when pagination enabled)
   source_field_id?: string; // Field ID from parent item (reference or multi-asset field), or field ID on child collection (inverse_reference)
-  source_field_type?: 'reference' | 'multi_reference' | 'multi_asset' | 'inverse_reference'; // Type of source field
+  source_field_type?:
+    'reference' | 'multi_reference' | 'multi_asset' | 'inverse_reference' | 'repeater'; // Type of source field
   source_field_source?: 'page' | 'collection'; // Source of the field (page data or collection layer)
   filters?: ConditionalVisibility; // Filter conditions to apply to collection items
   pagination?: CollectionPaginationConfig; // Pagination settings for collection

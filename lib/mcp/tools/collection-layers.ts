@@ -1,10 +1,6 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type {
-  Layer,
-  CollectionVariable,
-  CollectionField,
-} from '@/types';
+import type { Layer, CollectionVariable, CollectionField } from '@/types';
 import { getCollectionById } from '@/lib/repositories/collectionRepository';
 import { getFieldsByCollectionId } from '@/lib/repositories/collectionFieldRepository';
 import { getPageById } from '@/lib/repositories/pageRepository';
@@ -42,7 +38,10 @@ function inlineVariableTag(fieldData: ReturnType<typeof buildFieldData>): string
 
 /** A single Tiptap inline node representing a bound field. */
 function dynamicVariableNode(fieldData: ReturnType<typeof buildFieldData>, label: string) {
-  return { type: 'dynamicVariable', attrs: { variable: { type: 'field', data: fieldData }, label } };
+  return {
+    type: 'dynamicVariable',
+    attrs: { variable: { type: 'field', data: fieldData }, label },
+  };
 }
 
 /** Wrap inline nodes in a single-paragraph Tiptap doc. */
@@ -79,11 +78,16 @@ async function resolveBindingContext(
   if (source === 'collection') {
     const parent = findParentCollectionLayer(layers, layerId);
     if (!parent) {
-      return { error: 'Layer is not inside a Collection List. Place it inside a bound "collection" element, or use source "page".' };
+      return {
+        error:
+          'Layer is not inside a Collection List. Place it inside a bound "collection" element, or use source "page".',
+      };
     }
     const collectionId = parent.variables?.collection?.id;
     if (!collectionId) {
-      return { error: 'The ancestor Collection List is not bound yet. Call bind_collection_layer first.' };
+      return {
+        error: 'The ancestor Collection List is not bound yet. Call bind_collection_layer first.',
+      };
     }
     return { collectionId, collectionLayerId: parent.id };
   }
@@ -91,7 +95,10 @@ async function resolveBindingContext(
   const page = await getPageById(pageId);
   const collectionId = page?.settings?.cms?.collection_id;
   if (!collectionId) {
-    return { error: 'This page is not a dynamic CMS page. Bind it to a collection (update_page_settings.cms) or use source "collection".' };
+    return {
+      error:
+        'This page is not a dynamic CMS page. Bind it to a collection (update_page_settings.cms) or use source "collection".',
+    };
   }
   return { collectionId };
 }
@@ -101,14 +108,17 @@ async function resolveBindingContext(
  * layers render as `div` but repeat their children for each item in the bound
  * collection — they're created via add_layer template "collection".
  */
-function findCollectionLayer(layers: Layer[], layerId: string):
-  | { layer: Layer; collection: CollectionVariable }
-  | { error: string } {
+function findCollectionLayer(
+  layers: Layer[],
+  layerId: string,
+): { layer: Layer; collection: CollectionVariable } | { error: string } {
   const layer = findLayerById(layers, layerId);
   if (!layer) return { error: `Layer "${layerId}" not found.` };
   const collection = layer.variables?.collection;
   if (!collection) {
-    return { error: `Layer "${layerId}" is not a Collection List. Add one with add_layer template "collection", then bind it.` };
+    return {
+      error: `Layer "${layerId}" is not a Collection List. Add one with add_layer template "collection", then bind it.`,
+    };
   }
   return { layer, collection };
 }
@@ -135,44 +145,125 @@ visitors control sorting at runtime.`,
     {
       page_id: z.string().describe('The page ID'),
       layer_id: z.string().describe('The Collection List layer ID'),
-      collection_id: z.string().describe('The CMS collection to display (for nested reference/multi_reference, the field\'s target collection).'),
-      sort_by: z.string().optional()
-        .describe('"manual" (collection order), "random", "none", or a field ID to sort by. Omit to leave unchanged.'),
-      sort_order: z.enum(['asc', 'desc']).optional().describe('Sort direction when sort_by is a field ID.'),
-      limit: z.number().int().positive().optional().describe('Maximum number of items to show (ignored when pagination is enabled).'),
-      pagination: z.object({
-        enabled: z.boolean().describe('Turn pagination on or off.'),
-        mode: z.enum(['pages', 'load_more']).optional().describe('"pages" for numbered pages, "load_more" for a load-more button. Defaults to "pages".'),
-        items_per_page: z.number().int().positive().optional().describe('Items per page. Defaults to 10.'),
-      }).optional().describe('Pagination settings.'),
-      source_field_id: z.string().nullable().optional()
-        .describe('Nested collections: the reference field to source items from. Pass null to clear nesting (revert to a direct collection).'),
-      source_field_type: z.enum(['reference', 'multi_reference', 'multi_asset', 'inverse_reference']).optional()
+      collection_id: z
+        .string()
+        .describe(
+          "The CMS collection to display (for nested reference/multi_reference, the field's target collection).",
+        ),
+      sort_by: z
+        .string()
+        .optional()
+        .describe(
+          '"manual" (collection order), "random", "none", or a field ID to sort by. Omit to leave unchanged.',
+        ),
+      sort_order: z
+        .enum(['asc', 'desc'])
+        .optional()
+        .describe('Sort direction when sort_by is a field ID.'),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Maximum number of items to show (ignored when pagination is enabled).'),
+      pagination: z
+        .object({
+          enabled: z.boolean().describe('Turn pagination on or off.'),
+          mode: z
+            .enum(['pages', 'load_more'])
+            .optional()
+            .describe(
+              '"pages" for numbered pages, "load_more" for a load-more button. Defaults to "pages".',
+            ),
+          items_per_page: z
+            .number()
+            .int()
+            .positive()
+            .optional()
+            .describe('Items per page. Defaults to 10.'),
+        })
+        .optional()
+        .describe('Pagination settings.'),
+      source_field_id: z
+        .string()
+        .nullable()
+        .optional()
+        .describe(
+          'Nested collections: the reference field to source items from. Pass null to clear nesting (revert to a direct collection).',
+        ),
+      source_field_type: z
+        .enum(['reference', 'multi_reference', 'multi_asset', 'inverse_reference', 'repeater'])
+        .optional()
         .describe('Type of the source field. Required when source_field_id is set.'),
-      source_field_source: z.enum(['page', 'collection']).nullable().optional()
-        .describe('Where the source field lives: "collection" (ancestor list item) or "page" (dynamic page item). Omit for inverse_reference.'),
-      sort_by_input_layer_id: z.string().nullable().optional().describe('Link sort_by to a filter input layer (null clears).'),
-      sort_order_input_layer_id: z.string().nullable().optional().describe('Link sort_order to a filter input layer (null clears).'),
+      source_field_source: z
+        .enum(['page', 'collection'])
+        .nullable()
+        .optional()
+        .describe(
+          'Where the source field lives: "collection" (ancestor list item) or "page" (dynamic page item). Omit for inverse_reference.',
+        ),
+      sort_by_input_layer_id: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Link sort_by to a filter input layer (null clears).'),
+      sort_order_input_layer_id: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Link sort_order to a filter input layer (null clears).'),
     },
-    async ({ page_id, layer_id, collection_id, sort_by, sort_order, limit, pagination, source_field_id, source_field_type, source_field_source, sort_by_input_layer_id, sort_order_input_layer_id }) => {
+    async ({
+      page_id,
+      layer_id,
+      collection_id,
+      sort_by,
+      sort_order,
+      limit,
+      pagination,
+      source_field_id,
+      source_field_type,
+      source_field_source,
+      sort_by_input_layer_id,
+      sort_order_input_layer_id,
+    }) => {
       const pageLayers = await getCachedDraft(page_id);
       if (!pageLayers) {
-        return { content: [{ type: 'text' as const, text: `Error: Page "${page_id}" has no layers.` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: Page "${page_id}" has no layers.` }],
+          isError: true,
+        };
       }
 
       const layers = pageLayers.layers as Layer[];
       const found = findCollectionLayer(layers, layer_id);
       if ('error' in found) {
-        return { content: [{ type: 'text' as const, text: `Error: ${found.error}` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: ${found.error}` }],
+          isError: true,
+        };
       }
 
       const collection = await getCollectionById(collection_id);
       if (!collection) {
-        return { content: [{ type: 'text' as const, text: `Error: Collection "${collection_id}" not found.` }], isError: true };
+        return {
+          content: [
+            { type: 'text' as const, text: `Error: Collection "${collection_id}" not found.` },
+          ],
+          isError: true,
+        };
       }
 
       if (source_field_id && !source_field_type) {
-        return { content: [{ type: 'text' as const, text: 'Error: source_field_type is required when source_field_id is set.' }], isError: true };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: source_field_type is required when source_field_id is set.',
+            },
+          ],
+          isError: true,
+        };
       }
 
       const existing = found.collection;
@@ -184,13 +275,15 @@ visitors control sorting at runtime.`,
         ...(sort_by !== undefined ? { sort_by } : {}),
         ...(sort_order !== undefined ? { sort_order } : {}),
         ...(limit !== undefined ? { limit } : {}),
-        ...(pagination !== undefined ? {
-          pagination: {
-            enabled: pagination.enabled,
-            mode: pagination.mode ?? 'pages',
-            items_per_page: pagination.items_per_page ?? 10,
-          },
-        } : {}),
+        ...(pagination !== undefined
+          ? {
+              pagination: {
+                enabled: pagination.enabled,
+                mode: pagination.mode ?? 'pages',
+                items_per_page: pagination.items_per_page ?? 10,
+              },
+            }
+          : {}),
       };
 
       // Nested-collection sourcing. null clears nesting; a field id sets it.
@@ -206,9 +299,11 @@ visitors control sorting at runtime.`,
 
       // Sort input linking. null clears the link.
       if (sort_by_input_layer_id === null) delete nextVariable.sort_by_inputLayerId;
-      else if (sort_by_input_layer_id !== undefined) nextVariable.sort_by_inputLayerId = sort_by_input_layer_id;
+      else if (sort_by_input_layer_id !== undefined)
+        nextVariable.sort_by_inputLayerId = sort_by_input_layer_id;
       if (sort_order_input_layer_id === null) delete nextVariable.sort_order_inputLayerId;
-      else if (sort_order_input_layer_id !== undefined) nextVariable.sort_order_inputLayerId = sort_order_input_layer_id;
+      else if (sort_order_input_layer_id !== undefined)
+        nextVariable.sort_order_inputLayerId = sort_order_input_layer_id;
 
       // Filters reference the previous collection's fields — drop them when the
       // bound collection changes so we never persist conditions that can't resolve.
@@ -223,15 +318,17 @@ visitors control sorting at runtime.`,
       await saveCachedLayers(page_id, updated);
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            message: `Bound layer to collection "${collection.name}"`,
-            layer_id,
-            collection_id,
-            filters_cleared: collectionChanged || undefined,
-          }),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({
+              message: `Bound layer to collection "${collection.name}"`,
+              layer_id,
+              collection_id,
+              filters_cleared: collectionChanged || undefined,
+            }),
+          },
+        ],
       };
     },
   );
@@ -264,28 +361,46 @@ at runtime instead of a static value (use input_layer_id2 for the second bound o
     {
       page_id: z.string().describe('The page ID'),
       layer_id: z.string().describe('The Collection List layer ID'),
-      groups: z.array(z.object({
-        conditions: z.array(z.discriminatedUnion('source', [
-          fieldConditionSchema,
-          itemIdConditionSchema,
-        ])).min(1).describe('Conditions joined by OR.'),
-      })).describe('Filter groups joined by AND. Empty array clears all filters.'),
+      groups: z
+        .array(
+          z.object({
+            conditions: z
+              .array(z.discriminatedUnion('source', [fieldConditionSchema, itemIdConditionSchema]))
+              .min(1)
+              .describe('Conditions joined by OR.'),
+          }),
+        )
+        .describe('Filter groups joined by AND. Empty array clears all filters.'),
     },
     async ({ page_id, layer_id, groups }) => {
       const pageLayers = await getCachedDraft(page_id);
       if (!pageLayers) {
-        return { content: [{ type: 'text' as const, text: `Error: Page "${page_id}" has no layers.` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: Page "${page_id}" has no layers.` }],
+          isError: true,
+        };
       }
 
       const layers = pageLayers.layers as Layer[];
       const found = findCollectionLayer(layers, layer_id);
       if ('error' in found) {
-        return { content: [{ type: 'text' as const, text: `Error: ${found.error}` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: ${found.error}` }],
+          isError: true,
+        };
       }
 
       const collectionId = found.collection.id;
       if (!collectionId) {
-        return { content: [{ type: 'text' as const, text: 'Error: Layer is not bound to a collection. Call bind_collection_layer first.' }], isError: true };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: Layer is not bound to a collection. Call bind_collection_layer first.',
+            },
+          ],
+          isError: true,
+        };
       }
 
       const fields = await getFieldsByCollectionId(collectionId);
@@ -293,7 +408,10 @@ at runtime instead of a static value (use input_layer_id2 for the second bound o
 
       const result = buildConditionGroups(groups, { fieldsById, layers });
       if ('error' in result) {
-        return { content: [{ type: 'text' as const, text: `Error: ${result.error}` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: ${result.error}` }],
+          isError: true,
+        };
       }
       const builtGroups = result.groups;
 
@@ -311,16 +429,19 @@ at runtime instead of a static value (use input_layer_id2 for the second bound o
       await saveCachedLayers(page_id, updated);
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            message: builtGroups.length > 0
-              ? `Set ${builtGroups.length} filter group(s) on the collection layer`
-              : 'Cleared all filters on the collection layer',
-            layer_id,
-            groups: builtGroups.length,
-          }),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({
+              message:
+                builtGroups.length > 0
+                  ? `Set ${builtGroups.length} filter group(s) on the collection layer`
+                  : 'Cleared all filters on the collection layer',
+              layer_id,
+              groups: builtGroups.length,
+            }),
+          },
+        ],
       };
     },
   );
@@ -346,24 +467,47 @@ page_id_target = the dynamic page, and NO collection_item_id (it resolves to the
       page_id: z.string().describe('The page ID'),
       layer_id: z.string().describe('The layer whose content to bind'),
       field_id: z.string().describe('The collection field ID to bind to'),
-      source: z.enum(['collection', 'page']).default('collection')
-        .describe('"collection" = nearest ancestor Collection List (default). "page" = the dynamic page\'s collection item.'),
-      target: z.enum(['auto', 'src', 'alt', 'poster', 'background']).default('auto')
-        .describe('What to bind. "auto" picks by layer type (text→text, image/video/audio→src). Use "alt", "poster", or "background" for those specific targets.'),
-      format: z.string().optional().describe('Optional value format (e.g. a date format) applied when rendering the field.'),
-      prefix: z.string().optional().describe('Text layers only: literal text rendered before the field value.'),
-      suffix: z.string().optional().describe('Text layers only: literal text rendered after the field value.'),
+      source: z
+        .enum(['collection', 'page'])
+        .default('collection')
+        .describe(
+          '"collection" = nearest ancestor Collection List (default). "page" = the dynamic page\'s collection item.',
+        ),
+      target: z
+        .enum(['auto', 'src', 'alt', 'poster', 'background'])
+        .default('auto')
+        .describe(
+          'What to bind. "auto" picks by layer type (text→text, image/video/audio→src). Use "alt", "poster", or "background" for those specific targets.',
+        ),
+      format: z
+        .string()
+        .optional()
+        .describe('Optional value format (e.g. a date format) applied when rendering the field.'),
+      prefix: z
+        .string()
+        .optional()
+        .describe('Text layers only: literal text rendered before the field value.'),
+      suffix: z
+        .string()
+        .optional()
+        .describe('Text layers only: literal text rendered after the field value.'),
     },
     async ({ page_id, layer_id, field_id, source, target, format, prefix, suffix }) => {
       const pageLayers = await getCachedDraft(page_id);
       if (!pageLayers) {
-        return { content: [{ type: 'text' as const, text: `Error: Page "${page_id}" has no layers.` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: Page "${page_id}" has no layers.` }],
+          isError: true,
+        };
       }
 
       const layers = pageLayers.layers as Layer[];
       const layer = findLayerById(layers, layer_id);
       if (!layer) {
-        return { content: [{ type: 'text' as const, text: `Error: Layer "${layer_id}" not found.` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: Layer "${layer_id}" not found.` }],
+          isError: true,
+        };
       }
 
       // Resolve which collection the field must belong to, plus the FieldVariable source metadata.
@@ -376,7 +520,15 @@ page_id_target = the dynamic page, and NO collection_item_id (it resolves to the
       const fields = await getFieldsByCollectionId(collectionId);
       const field = fields.find((f) => f.id === field_id);
       if (!field) {
-        return { content: [{ type: 'text' as const, text: `Error: Field "${field_id}" not found in the ${source === 'page' ? 'page' : 'list'} collection.` }], isError: true };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Error: Field "${field_id}" not found in the ${source === 'page' ? 'page' : 'list'} collection.`,
+            },
+          ],
+          isError: true,
+        };
       }
 
       const fieldData = buildFieldData(field, source, collectionLayerId, format);
@@ -386,12 +538,18 @@ page_id_target = the dynamic page, and NO collection_item_id (it resolves to the
       let summary: string;
 
       if (target === 'background') {
-        nextVariables = { ...layer.variables, backgroundImage: { src: { type: 'field', data: fieldData } } };
+        nextVariables = {
+          ...layer.variables,
+          backgroundImage: { src: { type: 'field', data: fieldData } },
+        };
         summary = `background image → "${field.name}"`;
       } else if (isText && (target === 'auto' || target === 'src')) {
         nextVariables = {
           ...layer.variables,
-          text: { type: 'dynamic_rich_text', data: { content: buildBoundTextDoc(fieldData, field.name, prefix, suffix) } },
+          text: {
+            type: 'dynamic_rich_text',
+            data: { content: buildBoundTextDoc(fieldData, field.name, prefix, suffix) },
+          },
         };
         summary = `text → "${field.name}"`;
       } else if (layer.name === 'image') {
@@ -401,7 +559,10 @@ page_id_target = the dynamic page, and NO collection_item_id (it resolves to the
             ...layer.variables,
             image: {
               src: existing?.src ?? { type: 'asset', data: { asset_id: null } },
-              alt: { type: 'dynamic_text', data: { content: `${prefix ?? ''}${inlineVariableTag(fieldData)}${suffix ?? ''}` } },
+              alt: {
+                type: 'dynamic_text',
+                data: { content: `${prefix ?? ''}${inlineVariableTag(fieldData)}${suffix ?? ''}` },
+              },
             },
           };
           summary = `image alt → "${field.name}"`;
@@ -418,30 +579,49 @@ page_id_target = the dynamic page, and NO collection_item_id (it resolves to the
       } else if (layer.name === 'video') {
         const existing = layer.variables?.video;
         if (target === 'poster') {
-          nextVariables = { ...layer.variables, video: { ...existing, poster: { type: 'field', data: fieldData } } };
+          nextVariables = {
+            ...layer.variables,
+            video: { ...existing, poster: { type: 'field', data: fieldData } },
+          };
           summary = `video poster → "${field.name}"`;
         } else {
-          nextVariables = { ...layer.variables, video: { ...existing, src: { type: 'field', data: fieldData } } };
+          nextVariables = {
+            ...layer.variables,
+            video: { ...existing, src: { type: 'field', data: fieldData } },
+          };
           summary = `video src → "${field.name}"`;
         }
       } else if (layer.name === 'audio') {
-        nextVariables = { ...layer.variables, audio: { ...layer.variables?.audio, src: { type: 'field', data: fieldData } } };
+        nextVariables = {
+          ...layer.variables,
+          audio: { ...layer.variables?.audio, src: { type: 'field', data: fieldData } },
+        };
         summary = `audio src → "${field.name}"`;
       } else {
         return {
-          content: [{ type: 'text' as const, text: `Error: Layer "${layer.customName || layer.name}" (${layer.name}) cannot bind a "${target}" field. Use a text, image, video, or audio layer, or target "background".` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Error: Layer "${layer.customName || layer.name}" (${layer.name}) cannot bind a "${target}" field. Use a text, image, video, or audio layer, or target "background".`,
+            },
+          ],
           isError: true,
         };
       }
 
-      const updated = updateLayerById(layers, layer_id, (l) => ({ ...l, variables: nextVariables }));
+      const updated = updateLayerById(layers, layer_id, (l) => ({
+        ...l,
+        variables: nextVariables,
+      }));
       await saveCachedLayers(page_id, updated);
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({ message: `Bound ${summary}`, layer_id, field_id, source }),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({ message: `Bound ${summary}`, layer_id, field_id, source }),
+          },
+        ],
       };
     },
   );
@@ -458,29 +638,52 @@ or on a dynamic CMS page (source "page").`,
     {
       page_id: z.string().describe('The page ID'),
       layer_id: z.string().describe('The text / heading / richText layer'),
-      source: z.enum(['collection', 'page']).default('collection')
-        .describe('"collection" = nearest ancestor Collection List (default). "page" = the dynamic page\'s collection item.'),
-      segments: z.array(z.discriminatedUnion('type', [
-        z.object({ type: z.literal('text'), text: z.string().describe('Literal text.') }),
-        z.object({
-          type: z.literal('field'),
-          field_id: z.string().describe('Collection field ID to insert.'),
-          format: z.string().optional().describe('Optional value format (e.g. a date format).'),
-        }),
-      ])).min(1).describe('Ordered segments interleaving literal text and field references.'),
+      source: z
+        .enum(['collection', 'page'])
+        .default('collection')
+        .describe(
+          '"collection" = nearest ancestor Collection List (default). "page" = the dynamic page\'s collection item.',
+        ),
+      segments: z
+        .array(
+          z.discriminatedUnion('type', [
+            z.object({ type: z.literal('text'), text: z.string().describe('Literal text.') }),
+            z.object({
+              type: z.literal('field'),
+              field_id: z.string().describe('Collection field ID to insert.'),
+              format: z.string().optional().describe('Optional value format (e.g. a date format).'),
+            }),
+          ]),
+        )
+        .min(1)
+        .describe('Ordered segments interleaving literal text and field references.'),
     },
     async ({ page_id, layer_id, source, segments }) => {
       const pageLayers = await getCachedDraft(page_id);
       if (!pageLayers) {
-        return { content: [{ type: 'text' as const, text: `Error: Page "${page_id}" has no layers.` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: Page "${page_id}" has no layers.` }],
+          isError: true,
+        };
       }
       const layers = pageLayers.layers as Layer[];
       const layer = findLayerById(layers, layer_id);
       if (!layer) {
-        return { content: [{ type: 'text' as const, text: `Error: Layer "${layer_id}" not found.` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: Layer "${layer_id}" not found.` }],
+          isError: true,
+        };
       }
       if (layer.name !== 'text' && layer.name !== 'richText') {
-        return { content: [{ type: 'text' as const, text: `Error: Layer "${layer.customName || layer.name}" (${layer.name}) is not a text layer.` }], isError: true };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Error: Layer "${layer.customName || layer.name}" (${layer.name}) is not a text layer.`,
+            },
+          ],
+          isError: true,
+        };
       }
 
       const ctx = await resolveBindingContext(layers, layer_id, page_id, source);
@@ -501,28 +704,58 @@ or on a dynamic CMS page (source "page").`,
         }
         const field = fieldsById.get(seg.field_id);
         if (!field) {
-          return { content: [{ type: 'text' as const, text: `Error: Field "${seg.field_id}" not found in the ${source === 'page' ? 'page' : 'list'} collection.` }], isError: true };
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: `Error: Field "${seg.field_id}" not found in the ${source === 'page' ? 'page' : 'list'} collection.`,
+              },
+            ],
+            isError: true,
+          };
         }
-        content.push(dynamicVariableNode(buildFieldData(field, source, collectionLayerId, seg.format), field.name));
+        content.push(
+          dynamicVariableNode(
+            buildFieldData(field, source, collectionLayerId, seg.format),
+            field.name,
+          ),
+        );
         fieldCount += 1;
       }
 
       if (fieldCount === 0) {
-        return { content: [{ type: 'text' as const, text: 'Error: Provide at least one "field" segment (use plain static text for non-dynamic content).' }], isError: true };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Error: Provide at least one "field" segment (use plain static text for non-dynamic content).',
+            },
+          ],
+          isError: true,
+        };
       }
 
       const nextVariables: Layer['variables'] = {
         ...layer.variables,
         text: { type: 'dynamic_rich_text', data: { content: paragraphDoc(content) } },
       };
-      const updated = updateLayerById(layers, layer_id, (l) => ({ ...l, variables: nextVariables }));
+      const updated = updateLayerById(layers, layer_id, (l) => ({
+        ...l,
+        variables: nextVariables,
+      }));
       await saveCachedLayers(page_id, updated);
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({ message: `Set dynamic text with ${fieldCount} field(s)`, layer_id, source }),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({
+              message: `Set dynamic text with ${fieldCount} field(s)`,
+              layer_id,
+              source,
+            }),
+          },
+        ],
       };
     },
   );
@@ -546,23 +779,40 @@ CONDITION SOURCES:
     {
       page_id: z.string().describe('The page ID'),
       layer_id: z.string().describe('The layer to show/hide conditionally'),
-      groups: z.array(z.object({
-        conditions: z.array(z.discriminatedUnion('source', [
-          fieldConditionSchema,
-          itemIdConditionSchema,
-          pageCollectionConditionSchema,
-        ])).min(1).describe('Conditions joined by OR.'),
-      })).describe('Condition groups joined by AND. Empty array clears all conditions (always visible).'),
+      groups: z
+        .array(
+          z.object({
+            conditions: z
+              .array(
+                z.discriminatedUnion('source', [
+                  fieldConditionSchema,
+                  itemIdConditionSchema,
+                  pageCollectionConditionSchema,
+                ]),
+              )
+              .min(1)
+              .describe('Conditions joined by OR.'),
+          }),
+        )
+        .describe(
+          'Condition groups joined by AND. Empty array clears all conditions (always visible).',
+        ),
     },
     async ({ page_id, layer_id, groups }) => {
       const pageLayers = await getCachedDraft(page_id);
       if (!pageLayers) {
-        return { content: [{ type: 'text' as const, text: `Error: Page "${page_id}" has no layers.` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: Page "${page_id}" has no layers.` }],
+          isError: true,
+        };
       }
       const layers = pageLayers.layers as Layer[];
       const layer = findLayerById(layers, layer_id);
       if (!layer) {
-        return { content: [{ type: 'text' as const, text: `Error: Layer "${layer_id}" not found.` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: Layer "${layer_id}" not found.` }],
+          isError: true,
+        };
       }
 
       // Gather candidate fields from every collection context the layer can see:
@@ -576,7 +826,9 @@ CONDITION SOURCES:
       const page = await getPageById(page_id);
       if (page?.settings?.cms?.collection_id) collectionIds.add(page.settings.cms.collection_id);
 
-      const fieldArrays = await Promise.all([...collectionIds].map((cid) => getFieldsByCollectionId(cid)));
+      const fieldArrays = await Promise.all(
+        [...collectionIds].map((cid) => getFieldsByCollectionId(cid)),
+      );
       const fieldsById = new Map<string, CollectionField>();
       for (const fields of fieldArrays) {
         for (const f of fields) fieldsById.set(f.id, f);
@@ -584,7 +836,10 @@ CONDITION SOURCES:
 
       const result = buildConditionGroups(groups, { fieldsById, layers });
       if ('error' in result) {
-        return { content: [{ type: 'text' as const, text: `Error: ${result.error}` }], isError: true };
+        return {
+          content: [{ type: 'text' as const, text: `Error: ${result.error}` }],
+          isError: true,
+        };
       }
       const builtGroups = result.groups;
 
@@ -598,16 +853,19 @@ CONDITION SOURCES:
       await saveCachedLayers(page_id, updated);
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: JSON.stringify({
-            message: builtGroups.length > 0
-              ? `Set ${builtGroups.length} visibility condition group(s)`
-              : 'Cleared conditional visibility (always visible)',
-            layer_id,
-            groups: builtGroups.length,
-          }),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({
+              message:
+                builtGroups.length > 0
+                  ? `Set ${builtGroups.length} visibility condition group(s)`
+                  : 'Cleared conditional visibility (always visible)',
+              layer_id,
+              groups: builtGroups.length,
+            }),
+          },
+        ],
       };
     },
   );

@@ -1001,9 +1001,48 @@ export function getAssetFieldTypeLabel(fieldType: CollectionFieldType): string {
 }
 
 // =============================================================================
+// Repeater Field Utilities
+// =============================================================================
+
+/**
+ * Parse a repeater field value (JSON array of row objects) into an array of
+ * row-value maps. Each row object is keyed by sub-field ID with string values.
+ * Returns an empty array for null/undefined/invalid values.
+ */
+export function parseRepeaterValue(value: string | null | undefined): Record<string, string>[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.map((row: unknown) => {
+        if (typeof row !== 'object' || row === null) return {};
+        const result: Record<string, string> = {};
+        for (const [key, val] of Object.entries(row as Record<string, unknown>)) {
+          result[key] = val === null || val === undefined ? '' : String(val);
+        }
+        return result;
+      });
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Build virtual item values for a single repeater row, keyed by sub-field ID.
+ * These are injected into the cloned layer's _collectionItemValues so child
+ * variables can resolve sub-field bindings directly by sub-field ID.
+ */
+export function buildRepeaterRowValues(row: Record<string, string>): Record<string, string> {
+  return { ...row };
+}
+
+// =============================================================================
 // Multi-Asset Virtual Fields
 // =============================================================================
 
+/** Prefix for virtual field names generated for multi-asset rows */
 /** Virtual collection ID marker for multi-asset collections */
 export const MULTI_ASSET_COLLECTION_ID = '__multi_asset__';
 
@@ -1118,6 +1157,17 @@ export function isVirtualAssetField(fieldId: string): boolean {
 }
 
 /**
+ * Checks whether a repeater field has at least one sub-field matching the allowed types.
+ */
+function repeaterHasMatchingSubFields(
+  field: CollectionField,
+  allowedTypes: CollectionFieldType[],
+): boolean {
+  const subFields = Array.isArray(field.data?.sub_fields) ? field.data.sub_fields : [];
+  return subFields.some((sf) => allowedTypes.includes(sf.type as CollectionFieldType));
+}
+
+/**
  * Checks recursively whether a reference field has at least one sub-field
  * matching the allowed types (directly or via nested references).
  */
@@ -1164,14 +1214,17 @@ export function filterFieldGroupsByType(
           }
           return true;
         }
+        if (field.type === 'repeater') {
+          return repeaterHasMatchingSubFields(field, allowedTypes);
+        }
         if (!allowedTypes.includes(field.type)) return false;
         if (options?.excludeMultipleAsset && isMultipleAssetField(field)) return false;
         return true;
       });
-      // References always appear after regular fields
+      // References and repeaters appear after regular fields
       fields.sort((a, b) => {
-        const aIsRef = a.type === 'reference' ? 1 : 0;
-        const bIsRef = b.type === 'reference' ? 1 : 0;
+        const aIsRef = a.type === 'reference' || a.type === 'repeater' ? 1 : 0;
+        const bIsRef = b.type === 'reference' || b.type === 'repeater' ? 1 : 0;
         return aIsRef - bIsRef;
       });
       return { ...group, fields };
@@ -1316,9 +1369,9 @@ export function buildFieldGroupsForLayer(
   const multiAssetContext =
     isMultiAssetParent && collectionVariable.source_field_id
       ? {
-        sourceFieldId: collectionVariable.source_field_id,
-        source: (collectionVariable.source_field_source || 'collection') as FieldSourceType,
-      }
+          sourceFieldId: collectionVariable.source_field_id,
+          source: (collectionVariable.source_field_source || 'collection') as FieldSourceType,
+        }
       : null;
   const parentCollectionLayers = parents
     .map((layer) => ({ layerId: layer.id, collectionId: getCollectionVariable(layer)?.id }))

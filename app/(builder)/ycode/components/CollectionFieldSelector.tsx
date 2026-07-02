@@ -24,8 +24,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { selectVariants } from '@/components/ui/select';
-import type { CollectionField, Collection, CollectionFieldType } from '@/types';
-import { getFieldIcon, filterFieldGroupsByType, flattenFieldGroups, DISPLAYABLE_FIELD_TYPES } from '@/lib/collection-field-utils';
+import type { CollectionField, Collection, CollectionFieldType, RepeaterSubField } from '@/types';
+import {
+  getFieldIcon,
+  filterFieldGroupsByType,
+  flattenFieldGroups,
+  DISPLAYABLE_FIELD_TYPES,
+} from '@/lib/collection-field-utils';
 
 // Import and re-export from centralized location for backwards compatibility
 import type { FieldSourceType, FieldGroup } from '@/lib/collection-field-utils';
@@ -56,7 +61,12 @@ interface CollectionFieldListProps {
   /** All collections for looking up collection names */
   collections: Collection[];
   /** Callback when a field is selected */
-  onSelect: (fieldId: string, relationshipPath: string[], source?: FieldSourceType, layerId?: string) => void;
+  onSelect: (
+    fieldId: string,
+    relationshipPath: string[],
+    source?: FieldSourceType,
+    layerId?: string,
+  ) => void;
   /** Current relationship path (used internally for recursion) */
   relationshipPath?: string[];
   /** Source type for these fields (used internally for recursion) */
@@ -112,7 +122,12 @@ function ReferenceFieldGroup({
   field: CollectionField;
   allFields: Record<string, CollectionField[]>;
   collections: Collection[];
-  onSelect: (fieldId: string, relationshipPath: string[], source?: FieldSourceType, layerId?: string) => void;
+  onSelect: (
+    fieldId: string,
+    relationshipPath: string[],
+    source?: FieldSourceType,
+    layerId?: string,
+  ) => void;
   relationshipPath: string[];
   source?: FieldSourceType;
   layerId?: string;
@@ -135,15 +150,12 @@ function ReferenceFieldGroup({
 
   return (
     <DropdownMenuSub>
-      <DropdownMenuSubTrigger
-        className="gap-2"
-        style={{ paddingLeft: `${8 + depth * 16}px` }}
-      >
+      <DropdownMenuSubTrigger className="gap-2" style={{ paddingLeft: `${8 + depth * 16}px` }}>
         <Icon name="database" className="size-3 text-muted-foreground shrink-0" />
         <span className="truncate">{field.name}</span>
       </DropdownMenuSubTrigger>
 
-      {(
+      {
         <DropdownMenuSubContent className="min-w-45">
           {referencedCollection && (
             <DropdownMenuLabel className="text-xs text-foreground/80 flex items-center justify-between gap-2">
@@ -163,7 +175,70 @@ function ReferenceFieldGroup({
             allowedTypes={allowedTypes}
           />
         </DropdownMenuSubContent>
-      )}
+      }
+    </DropdownMenuSub>
+  );
+}
+
+/**
+ * Repeater field group (submenu for sub-fields)
+ */
+function RepeaterFieldGroup({
+  field,
+  onSelect,
+  relationshipPath,
+  source,
+  layerId,
+  depth = 0,
+}: {
+  field: CollectionField;
+  onSelect: (
+    fieldId: string,
+    relationshipPath: string[],
+    source?: FieldSourceType,
+    layerId?: string,
+  ) => void;
+  relationshipPath: string[];
+  source?: FieldSourceType;
+  layerId?: string;
+  depth?: number;
+}) {
+  const subFields: RepeaterSubField[] = Array.isArray(field.data?.sub_fields)
+    ? field.data.sub_fields
+    : [];
+
+  if (subFields.length === 0) return null;
+
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="gap-2" style={{ paddingLeft: `${8 + depth * 16}px` }}>
+        <Icon name="rows" className="size-3 text-muted-foreground shrink-0" />
+        <span className="truncate">{field.name}</span>
+      </DropdownMenuSubTrigger>
+
+      <DropdownMenuSubContent className="min-w-45">
+        <DropdownMenuLabel className="text-xs text-foreground/80 flex items-center justify-between gap-2">
+          <span>Sub-fields</span>
+          <DropdownMenuShortcut className="tracking-normal">Repeater</DropdownMenuShortcut>
+        </DropdownMenuLabel>
+        {subFields.map((subField) => {
+          const iconName = getFieldIcon(subField.type);
+          return (
+            <DropdownMenuItem
+              key={subField.id}
+              onClick={() => {
+                // Sub-field ID becomes the field_id in the variable binding;
+                // within the Repeater List loop, row values are keyed by sub-field ID.
+                onSelect(subField.id, [], source, layerId);
+              }}
+              className="gap-2"
+            >
+              <Icon name={iconName} className="size-3 text-muted-foreground shrink-0" />
+              <span className="truncate">{subField.name}</span>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuSubContent>
     </DropdownMenuSub>
   );
 }
@@ -206,6 +281,21 @@ function CollectionFieldSelectorInner({
           );
         }
 
+        // Repeater fields become collapsible groups showing sub-fields
+        if (field.type === 'repeater') {
+          return (
+            <RepeaterFieldGroup
+              key={field.id}
+              field={field}
+              onSelect={onSelect}
+              relationshipPath={relationshipPath}
+              source={source}
+              layerId={layerId}
+              depth={depth}
+            />
+          );
+        }
+
         // Regular fields are selectable
         return (
           <FieldItem
@@ -215,7 +305,12 @@ function CollectionFieldSelectorInner({
             onSelect={() => {
               if (relationshipPath.length > 0) {
                 // Nested field: include relationship path
-                onSelect(relationshipPath[0], [...relationshipPath.slice(1), field.id], source, layerId);
+                onSelect(
+                  relationshipPath[0],
+                  [...relationshipPath.slice(1), field.id],
+                  source,
+                  layerId,
+                );
               } else {
                 // Root field: no relationship path
                 onSelect(field.id, [], source, layerId);
@@ -236,7 +331,12 @@ interface CollectionFieldSelectorProps {
   /** All collections for looking up collection names */
   collections: Collection[];
   /** Callback when a field is selected */
-  onSelect: (fieldId: string, relationshipPath: string[], source?: FieldSourceType, layerId?: string) => void;
+  onSelect: (
+    fieldId: string,
+    relationshipPath: string[],
+    source?: FieldSourceType,
+    layerId?: string,
+  ) => void;
   /** Allowed field types for filtering sub-options in reference fields */
   allowedTypes?: CollectionFieldType[];
 }
@@ -268,11 +368,7 @@ export function CollectionFieldSelector({
   );
 
   if (nonEmptyGroups.length === 0) {
-    return (
-      <div className="px-3 py-2 text-xs text-zinc-500">
-        No fields available
-      </div>
-    );
+    return <div className="px-3 py-2 text-xs text-zinc-500">No fields available</div>;
   }
 
   return (
@@ -326,7 +422,12 @@ interface FieldSelectDropdownProps {
   /** Currently selected field ID */
   value?: string | null;
   /** Callback when a field is selected - receives encoded value with source/layerId */
-  onSelect: (fieldId: string, relationshipPath: string[], source?: FieldSourceType, layerId?: string) => void;
+  onSelect: (
+    fieldId: string,
+    relationshipPath: string[],
+    source?: FieldSourceType,
+    layerId?: string,
+  ) => void;
   /** Placeholder text when no field is selected */
   placeholder?: string;
   /** Whether the dropdown is disabled */
@@ -358,7 +459,10 @@ export function FieldSelectDropdown({
 
   // Filter field groups by allowed types
   const filteredGroups = useMemo(() => {
-    const types = allowedFieldTypes && allowedFieldTypes.length > 0 ? allowedFieldTypes : DISPLAYABLE_FIELD_TYPES;
+    const types =
+      allowedFieldTypes && allowedFieldTypes.length > 0
+        ? allowedFieldTypes
+        : DISPLAYABLE_FIELD_TYPES;
     return filterFieldGroupsByType(fieldGroups, types, { allFields });
   }, [fieldGroups, allowedFieldTypes, allFields]);
 
@@ -366,10 +470,15 @@ export function FieldSelectDropdown({
   const selectedField = useMemo(() => {
     if (!value) return null;
     const allFlatFields = flattenFieldGroups(filteredGroups);
-    return allFlatFields.find(f => f.id === value) || null;
+    return allFlatFields.find((f) => f.id === value) || null;
   }, [value, filteredGroups]);
 
-  const handleSelect = (fieldId: string, relationshipPath: string[], source?: FieldSourceType, layerId?: string) => {
+  const handleSelect = (
+    fieldId: string,
+    relationshipPath: string[],
+    source?: FieldSourceType,
+    layerId?: string,
+  ) => {
     onSelect(fieldId, relationshipPath, source, layerId);
     setIsOpen(false);
   };
@@ -384,18 +493,23 @@ export function FieldSelectDropdown({
           className={cn(
             selectVariants({ variant: 'default', size: 'sm' }),
             'w-full cursor-pointer',
-            className
+            className,
           )}
           disabled={disabled || !hasFields}
         >
           <span className="flex items-center gap-2 truncate">
             {selectedField ? (
               <>
-                <Icon name={getFieldIcon(selectedField.type)} className="size-3 text-muted-foreground shrink-0" />
+                <Icon
+                  name={getFieldIcon(selectedField.type)}
+                  className="size-3 text-muted-foreground shrink-0"
+                />
                 <span className="truncate">{selectedField.name}</span>
               </>
             ) : (
-              <span className="text-muted-foreground">{hasFields ? placeholder : 'No fields available'}</span>
+              <span className="text-muted-foreground">
+                {hasFields ? placeholder : 'No fields available'}
+              </span>
             )}
           </span>
           <Icon name="chevronDown" className="size-2.5 opacity-50 shrink-0" />
